@@ -57,6 +57,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const editorBgImage = document.getElementById("editorBgImage");
 
     const clearButton = document.getElementById("clearButton");
+    const editorWrapper = document.querySelector(".editor-wrapper");
+    const viewSquareBtn = document.getElementById("saveSquareButton");
+    const viewPortraitBtn = document.getElementById("savePortraitButton");
 
     /* =====================================================
        코드에서 미리 지정하는 값
@@ -219,6 +222,23 @@ document.addEventListener("DOMContentLoaded", () => {
                 `https://fonts.googleapis.com/css2?family=${family}${weight}&display=swap`;
 
             document.head.appendChild(link);
+        });
+    }
+
+    function createFontOptions() {
+
+        fontSelect.innerHTML = "";
+
+        FONT_LIST.forEach(font => {
+
+            const option = document.createElement("option");
+
+            option.value = font.name;
+            option.textContent = font.name;
+
+            option.style.fontFamily = `"${font.name}", sans-serif`;
+
+            fontSelect.appendChild(option);
         });
     }
 
