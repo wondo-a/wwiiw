@@ -245,11 +245,14 @@ body {
 
 .editor-wrapper {
     position: relative;
-    width: 100%;
+    width: calc(100% + 28px);
+    margin-left: -14px;
+    margin-right: -14px;
     aspect-ratio: 1 / 1;
     margin-top: 14px;
     flex: none;
     min-height: 0;
+    transition: aspect-ratio 0.2s ease;
 }
 
 
@@ -267,8 +270,6 @@ body {
     z-index: 0;
 
     background-color: #ffffff;
-
-    border-radius: 8px;
 
     overflow: hidden;
     isolation: isolate;
@@ -307,7 +308,6 @@ body {
     font-size: 30px;
 
     border: 1px solid #d2d2d2;
-    border-radius: 8px;
     background: transparent;
     color: #222;
     outline: none;
@@ -466,7 +466,9 @@ body {
 ======================================== */
 .editor-wrapper {
     position: relative;
-    width: 100%;
+    width: calc(100% + 28px); /* 동일하게 부모 패딩 상쇄 */
+    margin-left: -14px;
+    margin-right: -14px;
     aspect-ratio: 1 / 1; /* 기본 1:1 정사각형 */
     margin-top: 14px;
     flex: none;
