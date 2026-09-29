@@ -812,7 +812,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             document.execCommand("styleWithCSS", false, true);
 
-            const range = currentRange(); // 👈 추가된 부분: 현재 선택 범위를 명확히 가져옴
+            const range = currentRange();
 
             if (isRangeHighlighted(range)) {
 
@@ -1106,34 +1106,6 @@ document.addEventListener("DOMContentLoaded", () => {
        배경 선택
     ===================================================== */
 
-    bgOptions.forEach(button => {
-
-        button.addEventListener(
-            "click",
-            () => {
-
-                const type = button.dataset.bg;
-
-                if (type === "image") {
-
-                    /* 아직 불러온 이미지가 없으면 갤러리 열기 */
-
-                    if (!bgImage) {
-
-                        bgImageInput.click();
-
-                        return;
-                    }
-                }
-
-                settings.bgType = type;
-
-                applyBackground();
-                saveSettings();
-            }
-        );
-    });
-
     bgImagePick.addEventListener(
         "click",
         () => bgImageInput.click()
@@ -1282,7 +1254,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     /* =====================================================
        붙여넣기: 글자만 붙여넣기
-       (다른 곳의 폰트·크기·배경이 섞이지 않도록)
     ===================================================== */
 
     editor.addEventListener(
@@ -1316,6 +1287,46 @@ document.addEventListener("DOMContentLoaded", () => {
                     span.remove();
                 } catch (e) {
                     editor.scrollTop = editor.scrollHeight;
+                }
+            }
+        }
+    );
+
+    /* =====================================================
+       말풍선 내부에서 엔터 입력 시 말풍선 바깥으로 탈출
+    ===================================================== */
+    editor.addEventListener(
+        "keydown",
+        (event) => {
+            if (event.key === "Enter") {
+                const selection = window.getSelection();
+                if (!selection || selection.rangeCount === 0) return;
+
+                const range = selection.getRangeAt(0);
+                const bubble = closestBubble(range.startContainer);
+
+                // 현재 커서가 말풍선(`.bubble`) 내부에 있다면
+                if (bubble) {
+                    event.preventDefault(); // 말풍선 안에서의 기본 줄바꿈 방지
+
+                    // 말풍선 바로 뒤에 커서를 놓을 수 있는 빈 줄(요소)이 있는지 확인, 없으면 생성
+                    let nextNode = bubble.nextSibling;
+                    if (!nextNode) {
+                        nextNode = createEmptyLine();
+                        bubble.after(nextNode);
+                    }
+
+                    // 커서를 말풍선 바깥(다음 줄)의 맨 앞로 이동
+                    const newRange = document.createRange();
+                    newRange.setStart(nextNode, 0);
+                    newRange.collapse(true);
+                    
+                    selection.removeAllRanges();
+                    selection.addRange(newRange);
+
+                    // 선택 영역 및 툴바 상태 갱신
+                    saveSelection();
+                    updateToolbarState();
                 }
             }
         }
@@ -1953,4 +1964,30 @@ document.addEventListener("DOMContentLoaded", () => {
 
     updateHighlightColorDisplay();
 
+});
+
+/* =====================================================
+    배경 선택 버튼 이벤트 (초기 1회만 등록)
+===================================================== */
+bgOptions.forEach(button => {
+    button.addEventListener(
+        "pointerdown",
+        (event) => {
+            event.preventDefault(); // 모바일 터치 지연 및 중복 방지
+
+            const type = button.dataset.bg;
+
+            if (type === "image") {
+                if (!bgImage) {
+                    bgImageInput.click();
+                    return;
+                }
+            }
+
+            settings.bgType = type;
+
+            applyBackground();
+            saveSettings();
+        }
+    );
 });
