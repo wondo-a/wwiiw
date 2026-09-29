@@ -1605,7 +1605,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             const renderScale = PNG_WIDTH / editor.getBoundingClientRect().width;
 
-            captureArea.style.padding = `${settings.editorPadding * renderScale}px`;
+            captureArea.style.padding = "0px";
             captureArea.style.backgroundColor = "transparent";
             captureArea.style.border = "none";
             captureArea.style.margin = "0";
@@ -1645,7 +1645,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             const PNG_HEIGHT = Math.max(
                 MIN_HEIGHT,
-                contentHeight + (settings.editorPadding * renderScale) * 2
+                contentHeight
             );
 
             captureArea.style.height = `${PNG_HEIGHT}px`;
