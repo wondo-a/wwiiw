@@ -1788,7 +1788,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         <div class="img-container">
                             <img src="${dataUrl}" alt="발췌 이미지">
                         </div>
-                        <p>위 이미지를 <b>꾹 눌러서</b><br><b>'사진에 추가'</b>를 선택하세요.</p>
+                        <p>이미지를 꾹 눌러서 저장</p>
                     </body>
                     </html>
                 `);
