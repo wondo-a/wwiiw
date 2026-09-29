@@ -1556,9 +1556,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     /* =====================================================
-       PNG 저장 공통 함수 (화면 줄바꿈 완벽 유지 방식)
+       PNG 저장 공통 함수 (1:1 또는 4:5 규격 대응)
     ===================================================== */
 
+    /* =====================================================
+       PNG 저장 공통 함수 (줄바꿈 완벽 유지 및 형광펜 오류 해결)
+    ===================================================== */
     async function handleSave(targetWidth, targetHeight, fileNamePrefix) {
 
         if (editor.textContent.trim().length === 0) {
@@ -1567,55 +1570,42 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         try {
-
             await loadHtml2Canvas();
-
             await ensureFontsReady();
 
-            const PNG_WIDTH = targetWidth;
-            const MIN_HEIGHT = targetHeight;
-
-            // 현재 화면의 에디터 실제 너비 기준 설정 (줄바꿈 어긋남 방지)
+            // 1. 현재 화면의 에디터 실제 너비 파악 (줄바꿈 어긋남 원천 차단)
             const currentWidth = editor.getBoundingClientRect().width;
-            const scaleFactor = PNG_WIDTH / currentWidth; // 1080px로 맞추기 위한 확대 배율
+            // 2. 1080px 규격으로 만들기 위한 확대 배율 계산
+            const targetScale = targetWidth / currentWidth;
 
             /* ---------------------------------------------
-            입력 내용 복제 (화면과 동일한 너비 유지)
+            입력 내용 복제 및 캡처용 임시 영역 설정
             --------------------------------------------- */
-
             const clone = editor.cloneNode(true);
-
             clone.removeAttribute("id");
             clone.removeAttribute("contenteditable");
 
-
-            /* ---------------------------------------------
-            캡처용 임시 영역 (화면 크기 그대로 생성)
-            --------------------------------------------- */
-
             const captureArea = document.createElement("div");
-
             captureArea.style.position = "absolute";
             captureArea.style.left = "-99999px";
             captureArea.style.top = "0";
-            captureArea.style.width = `${currentWidth}px`; // 👈 화면과 정확히 같은 너비
+            
+            // 💡 핵심 1: 1080px이 아닌 현재 화면 너비 그대로 고정
+            captureArea.style.width = `${currentWidth}px`;
             captureArea.style.boxSizing = "border-box";
-            captureArea.style.padding = `${settings.editorPadding}px`;
             captureArea.style.backgroundColor = "transparent";
             captureArea.style.border = "none";
             captureArea.style.margin = "0";
             captureArea.style.overflow = "visible";
 
-
-            /* ---------------------------------------------
-            복제된 입력창 스타일 적용
-            --------------------------------------------- */
-
             clone.style.width = "100%";
             clone.style.height = "auto";
             clone.style.minHeight = "0";
             clone.style.margin = "0";
-            clone.style.padding = "0";
+            
+            // 💡 핵심 2: 글자 크기와 패딩에 배율을 곱하지 않고 원래 값 그대로 유지
+            clone.style.padding = `${settings.editorPadding}px`;
+            clone.style.fontSize = `${settings.fontSize}px`;
             clone.style.border = "none";
             clone.style.borderRadius = "0";
             clone.style.outline = "none";
@@ -1623,114 +1613,70 @@ document.addEventListener("DOMContentLoaded", () => {
             clone.style.overflow = "visible";
             clone.style.boxSizing = "border-box";
 
-
             captureArea.appendChild(clone);
-
             document.body.appendChild(captureArea);
 
-
-            /* ---------------------------------------------
-            실제 내용 높이 계산
-            --------------------------------------------- */
-
             const contentHeight = clone.scrollHeight;
-
-            const captureHeight = Math.max(
-                currentWidth,
-                contentHeight + settings.editorPadding * 2
-            );
-
-            captureArea.style.height = `${captureHeight}px`;
-
+            captureArea.style.height = `${contentHeight}px`;
 
             /* ---------------------------------------------
-            화면 기준 고화질 캡처 (scaleFactor로 1080px 확대)
+            글자 캡처 (투명 배경) - 여기서 scale 옵션으로 확대
             --------------------------------------------- */
-
-            const textCanvas = await html2canvas(
-                captureArea,
-                {
-                    backgroundColor: null,
-                    scale: scaleFactor * 1.5, // 👈 선명도를 높이기 위한 추가 배율
-                    width: currentWidth,
-                    height: captureHeight,
-                    windowWidth: currentWidth,
-                    windowHeight: captureHeight,
-                    scrollX: 0,
-                    scrollY: 0,
-                    useCORS: true,
-                    logging: false,
-                    letterRendering: true
-                }
-            );
-
-
-            /* ---------------------------------------------
-            임시 영역 제거
-            --------------------------------------------- */
+            const textCanvas = await html2canvas(captureArea, {
+                backgroundColor: null,
+                scale: targetScale, // 💡 핵심 3: 화면 크기로 찍고 여기서 1080px로 확대
+                width: currentWidth,
+                height: contentHeight,
+                windowWidth: currentWidth,
+                windowHeight: contentHeight,
+                scrollX: 0,
+                scrollY: 0,
+                useCORS: true,
+                logging: false,
+                letterRendering: true
+            });
 
             captureArea.remove();
 
-
             /* ---------------------------------------------
-            최종 1080px 캔버스에 맞추어 배경과 합성
+            배경 + 글자 합성 (목표 규격에 맞게 캔버스 생성)
             --------------------------------------------- */
-
-            const finalHeight = Math.max(MIN_HEIGHT, Math.round(textCanvas.height * (PNG_WIDTH / textCanvas.width)));
+            // 최종 캔버스 높이는 최소 높이(1080 또는 1350)와 실제 캡처된 높이 중 큰 값
+            const finalHeight = Math.max(targetHeight, textCanvas.height);
 
             const output = document.createElement("canvas");
-
-            output.width = PNG_WIDTH;
+            output.width = targetWidth; // 항상 1080
             output.height = finalHeight;
-
             const context = output.getContext("2d");
 
             context.imageSmoothingEnabled = true;
             context.imageSmoothingQuality = "high";
 
-            const useImage =
-                settings.bgType === "image" && bgImage;
+            const useImage = settings.bgType === "image" && bgImage;
 
             if (useImage) {
-
-                const backgroundCanvas =
-                    await buildBackgroundCanvas(
-                        PNG_WIDTH,
-                        finalHeight,
-                        1,
-                        1
-                    );
-
-                context.drawImage(
-                    backgroundCanvas,
-                    0,
-                    0,
-                    PNG_WIDTH,
-                    finalHeight
+                const backgroundCanvas = await buildBackgroundCanvas(
+                    targetWidth,
+                    finalHeight,
+                    targetScale,
+                    1
                 );
-
+                context.drawImage(backgroundCanvas, 0, 0, targetWidth, finalHeight);
             } else {
-
-                const bg =
-                    BACKGROUNDS[settings.bgType] || BACKGROUNDS.white;
-
+                const bg = BACKGROUNDS[settings.bgType] || BACKGROUNDS.white;
                 context.fillStyle = bg.color;
-
-                context.fillRect(0, 0, PNG_WIDTH, finalHeight);
+                context.fillRect(0, 0, targetWidth, finalHeight);
             }
 
-            // 텍스트를 1080px 규격에 맞춰 비율대로 깔끔하게 그림
-            context.drawImage(textCanvas, 0, 0, PNG_WIDTH, finalHeight);
-
+            // 확대한 글자 캔버스를 최종 배경 위에 비율 훼손 없이 합성
+            context.drawImage(textCanvas, 0, 0);
 
             /* ---------------------------------------------
-            새 창 미리보기 (아이폰 꾹 눌러 저장)
+            PNG 생성 및 새 창 미리보기 (이미지 꾹 눌러 저장 방식)
             --------------------------------------------- */
-
             const dataUrl = output.toDataURL("image/png");
 
             const newWindow = window.open();
-            
             if (newWindow) {
                 newWindow.document.write(`
                     <!DOCTYPE html>
@@ -1741,47 +1687,17 @@ document.addEventListener("DOMContentLoaded", () => {
                         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
                         <style>
                             * { box-sizing: border-box; }
-                            body {
-                                margin: 0;
-                                background: #121212;
-                                display: flex;
-                                flex-direction: column;
-                                align-items: center;
-                                justify-content: center;
-                                min-height: 100vh;
-                                color: #ffffff;
-                                font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-                                padding: 20px;
-                            }
-                            .img-container {
-                                max-width: 100%;
-                                max-height: 80vh;
-                                display: flex;
-                                justify-content: center;
-                                align-items: center;
-                            }
-                            img {
-                                max-width: 100%;
-                                max-height: 80vh;
-                                object-fit: contain;
-                                border-radius: 12px;
-                                box-shadow: 0 8px 30px rgba(0,0,0,0.6);
-                            }
-                            p {
-                                margin-top: 20px;
-                                font-size: 15px;
-                                font-weight: 500;
-                                color: #cccccc;
-                                text-align: center;
-                                line-height: 1.4;
-                            }
+                            body { margin: 0; background: #121212; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; color: #ffffff; font-family: -apple-system, BlinkMacSystemFont, sans-serif; padding: 20px; }
+                            .img-container { max-width: 100%; max-height: 80vh; display: flex; justify-content: center; align-items: center; }
+                            img { max-width: 100%; max-height: 80vh; object-fit: contain; border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,0.6); }
+                            p { margin-top: 20px; font-size: 15px; font-weight: 500; color: #cccccc; text-align: center; line-height: 1.4; }
                         </style>
                     </head>
                     <body>
                         <div class="img-container">
                             <img src="${dataUrl}" alt="발췌 이미지">
                         </div>
-                        <p>꾹 눌러서 저장</p>
+                        <p>위 이미지를 <b>꾹 눌러서</b><br><b>'사진에 추가'</b>를 선택하세요.</p>
                     </body>
                     </html>
                 `);
@@ -1795,11 +1711,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 link.remove();
             }
 
-
         } catch (error) {
-
             console.error("PNG 저장 오류:", error);
-
             alert("이미지를 저장하는 중 문제가 발생했습니다.");
         }
     }
