@@ -1295,6 +1295,9 @@ document.addEventListener("DOMContentLoaded", () => {
     /* =====================================================
        말풍선 내부에서 엔터 입력 시 말풍선 바깥으로 탈출
     ===================================================== */
+    /* =====================================================
+       말풍선 내부에서 엔터 입력 시 말풍선 바깥으로 탈출 (수정본)
+    ===================================================== */
     editor.addEventListener(
         "keydown",
         (event) => {
@@ -1305,26 +1308,25 @@ document.addEventListener("DOMContentLoaded", () => {
                 const range = selection.getRangeAt(0);
                 const bubble = closestBubble(range.startContainer);
 
-                // 현재 커서가 말풍선(`.bubble`) 내부에 있다면
                 if (bubble) {
-                    event.preventDefault(); // 말풍선 안에서의 기본 줄바꿈 방지
+                    event.preventDefault(); // 기본 줄바꿈 방지
 
-                    // 말풍선 바로 뒤에 커서를 놓을 수 있는 빈 줄(요소)이 있는지 확인, 없으면 생성
-                    let nextNode = bubble.nextSibling;
-                    if (!nextNode) {
-                        nextNode = createEmptyLine();
-                        bubble.after(nextNode);
-                    }
+                    // 말풍선 바깥 바로 아래에 일반 텍스트 입력을 위한 빈 줄 생성
+                    const newLine = document.createElement("div");
+                    const br = document.createElement("br");
+                    newLine.appendChild(br);
 
-                    // 커서를 말풍선 바깥(다음 줄)의 맨 앞로 이동
+                    // 말풍선 요소 바로 뒤에 삽입
+                    bubble.after(newLine);
+
+                    // 커서를 새로 만든 빈 줄의 맨 앞으로 이동시켜 말풍선 속성 완전 해제
                     const newRange = document.createRange();
-                    newRange.setStart(nextNode, 0);
+                    newRange.setStart(br, 0);
                     newRange.collapse(true);
                     
                     selection.removeAllRanges();
                     selection.addRange(newRange);
 
-                    // 선택 영역 및 툴바 상태 갱신
                     saveSelection();
                     updateToolbarState();
                 }
@@ -1964,30 +1966,4 @@ document.addEventListener("DOMContentLoaded", () => {
 
     updateHighlightColorDisplay();
 
-});
-
-/* =====================================================
-    배경 선택 버튼 이벤트 (초기 1회만 등록)
-===================================================== */
-bgOptions.forEach(button => {
-    button.addEventListener(
-        "pointerdown",
-        (event) => {
-            event.preventDefault(); // 모바일 터치 지연 및 중복 방지
-
-            const type = button.dataset.bg;
-
-            if (type === "image") {
-                if (!bgImage) {
-                    bgImageInput.click();
-                    return;
-                }
-            }
-
-            settings.bgType = type;
-
-            applyBackground();
-            saveSettings();
-        }
-    );
 });
