@@ -1590,6 +1590,15 @@ document.addEventListener("DOMContentLoaded", () => {
             clone.removeAttribute("id");
             clone.removeAttribute("contenteditable");
 
+            // 👈 핵심 수정: 복제된 클론 내부의 형광펜 관련 span이나 background가 적용된 인라인 요소들이 줄 전체로 확장되지 않도록 인라인 속성 유지 보정
+            clone.querySelectorAll("span, font, [style]").forEach(el => {
+                if (el.style && el.style.backgroundColor && !isTransparent(el.style.backgroundColor)) {
+                    el.style.display = "inline";
+                    el.style.boxDecorationBreak = "clone";
+                    el.style.webkitBoxDecorationBreak = "clone";
+                }
+            });
+
 
             /* ---------------------------------------------
             캡처용 임시 영역
