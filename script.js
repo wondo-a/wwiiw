@@ -1846,6 +1846,32 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     );
 
+    /* =====================================================
+       배경 선택 버튼 이벤트 (초기 1회만 등록)
+    ===================================================== */
+    bgOptions.forEach(button => {
+        button.addEventListener(
+            "pointerdown",
+            (event) => {
+                event.preventDefault(); // 모바일 터치 지연 및 중복 방지
+
+                const type = button.dataset.bg;
+
+                if (type === "image") {
+                    if (!bgImage) {
+                        bgImageInput.click();
+                        return;
+                    }
+                }
+
+                settings.bgType = type;
+
+                applyBackground();
+                saveSettings();
+            }
+        );
+    });
+
 
     /* =====================================================
        초기 실행
