@@ -415,15 +415,6 @@ document.addEventListener("DOMContentLoaded", () => {
         editor.style.color = textColor;
 
         /* 배경 창 표시 갱신 */
-
-        bgOptions.forEach(button => {
-
-            button.classList.toggle(
-                "active",
-                button.dataset.bg === settings.bgType
-            );
-        });
-
         if (bgImage) {
 
             bgImageOption.style.backgroundImage =
@@ -1115,31 +1106,6 @@ document.addEventListener("DOMContentLoaded", () => {
        배경 선택
     ===================================================== */
 
-    bgOptions.forEach(button => {
-
-        button.addEventListener(
-            "click",
-            () => {
-
-                const type = button.dataset.bg;
-
-                /* 아직 불러온 이미지가 없으면 갤러리 열기 */
-
-                if (type === "image" && !bgImage) {
-
-                    bgImageInput.click();
-
-                    return;
-                }
-
-                settings.bgType = type;
-
-                applyBackground();
-                saveSettings();
-            }
-        );
-    });
-
     bgImagePick.addEventListener(
         "click",
         () => bgImageInput.click()
@@ -1590,7 +1556,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     /* =====================================================
-       PNG 저장 공통 함수 (화면 줄바꿈 완벽 유지 방식)
+       PNG 저장 공통 함수 (1:1 또는 4:5 규격 대응)
     ===================================================== */
 
     async function handleSave(targetWidth, targetHeight, fileNamePrefix) {
@@ -1609,12 +1575,14 @@ document.addEventListener("DOMContentLoaded", () => {
             const PNG_WIDTH = targetWidth;
             const MIN_HEIGHT = targetHeight;
 
-            // 현재 화면의 에디터 실제 너비 기준 설정 (줄바꿈 어긋남 방지)
-            const currentWidth = editor.getBoundingClientRect().width;
-            const scaleFactor = PNG_WIDTH / currentWidth; // 1080px로 맞추기 위한 확대 배율
+            const OUTPUT_SCALE = 3; // 화질 극대화 배율
+
+            /* 화면 입력창 너비 대비 PNG 너비 (블러 보정용) */
+            const factor =
+                PNG_WIDTH / editor.getBoundingClientRect().width;
 
             /* ---------------------------------------------
-            입력 내용 복제 (화면과 동일한 너비 유지)
+            입력 내용 복제
             --------------------------------------------- */
 
             const clone = editor.cloneNode(true);
@@ -1624,7 +1592,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
             /* ---------------------------------------------
-            캡처용 임시 영역 (화면 크기 그대로 생성)
+            캡처용 임시 영역
             --------------------------------------------- */
 
             const captureArea = document.createElement("div");
@@ -1632,9 +1600,12 @@ document.addEventListener("DOMContentLoaded", () => {
             captureArea.style.position = "absolute";
             captureArea.style.left = "-99999px";
             captureArea.style.top = "0";
-            captureArea.style.width = `${currentWidth}px`; // 👈 화면과 정확히 같은 너비
+            captureArea.style.width = `${PNG_WIDTH}px`;
             captureArea.style.boxSizing = "border-box";
-            captureArea.style.padding = `${settings.editorPadding}px`;
+
+            const renderScale = PNG_WIDTH / editor.getBoundingClientRect().width;
+
+            captureArea.style.padding = `${settings.editorPadding * renderScale}px`;
             captureArea.style.backgroundColor = "transparent";
             captureArea.style.border = "none";
             captureArea.style.margin = "0";
@@ -1642,14 +1613,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
             /* ---------------------------------------------
-            복제된 입력창 스타일 적용
+            복제된 입력창 (비율 유지 스케일링)
             --------------------------------------------- */
 
             clone.style.width = "100%";
             clone.style.height = "auto";
             clone.style.minHeight = "0";
             clone.style.margin = "0";
-            clone.style.padding = "0";
+            
+            clone.style.padding = `${settings.editorPadding * renderScale}px`;
+            clone.style.fontSize = `${settings.fontSize * renderScale}px`;
+
             clone.style.border = "none";
             clone.style.borderRadius = "0";
             clone.style.outline = "none";
@@ -1664,110 +1638,33 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
             /* ---------------------------------------------
-            실제 내용 높이 계산
+            실제 내용 높이 계산 및 최소 규격 반영
             --------------------------------------------- */
 
             const contentHeight = clone.scrollHeight;
 
-            const captureHeight = Math.max(
-                currentWidth,
-                contentHeight + settings.editorPadding * 2
+            const PNG_HEIGHT = Math.max(
+                MIN_HEIGHT,
+                contentHeight + (settings.editorPadding * renderScale) * 2
             );
 
-            captureArea.style.height = `${captureHeight}px`;
-
-            /* ---------------------------------------------
-            형광펜 위치를 브라우저 계산값으로 직접 수집
-            (html2canvas 가 인라인 배경을 줄 단위로 그리지 못해
-             문장 전체가 칠해지는 문제 방지)
-            --------------------------------------------- */
-
-            const highlightRects = [];
-
-            const areaRect = captureArea.getBoundingClientRect();
-
-            const textWalker = document.createTreeWalker(
-                clone,
-                NodeFilter.SHOW_TEXT
-            );
-
-            while (textWalker.nextNode()) {
-
-                const textNode = textWalker.currentNode;
-
-                let color = null;
-
-                let element = textNode.parentElement;
-
-                while (element && element !== clone) {
-
-                    if (
-                        element.style &&
-                        element.style.backgroundColor &&
-                        !isTransparent(element.style.backgroundColor)
-                    ) {
-                        color = element.style.backgroundColor;
-                        break;
-                    }
-
-                    element = element.parentElement;
-                }
-
-                if (!color) {
-                    continue;
-                }
-
-                const inBubble = Boolean(
-                    textNode.parentElement.closest(".bubble")
-                );
-
-                const textRange = document.createRange();
-
-                textRange.selectNodeContents(textNode);
-
-                Array.from(textRange.getClientRects()).forEach(rect => {
-
-                    if (rect.width > 0 && rect.height > 0) {
-
-                        highlightRects.push({
-                            x: rect.left - areaRect.left,
-                            y: rect.top - areaRect.top,
-                            width: rect.width,
-                            height: rect.height,
-                            color,
-                            inBubble
-                        });
-                    }
-                });
-            }
-
-            /* html2canvas 가 그리지 않도록 원래 형광펜 배경 제거 */
-
-            clone.querySelectorAll("[style]").forEach(el => {
-
-                if (
-                    el.style.backgroundColor &&
-                    !isTransparent(el.style.backgroundColor)
-                ) {
-                    el.style.backgroundColor = "transparent";
-                }
-            });
-
+            captureArea.style.height = `${PNG_HEIGHT}px`;
+            captureArea.style.minHeight = `${PNG_HEIGHT}px`;
 
 
             /* ---------------------------------------------
-            화면 기준 고화질 캡처 (scaleFactor로 1080px 확대)
+            글자 캡처 (투명 배경)
             --------------------------------------------- */
 
             const textCanvas = await html2canvas(
                 captureArea,
                 {
                     backgroundColor: null,
-                    scale: scaleFactor * 1.5, // 👈 선명도를 높이기 위한 추가 배율
-                    width: currentWidth,
-                    height: captureHeight,
-                    windowWidth: currentWidth,
-                    windowHeight: captureHeight,
+                    scale: OUTPUT_SCALE,
+                    width: PNG_WIDTH,
+                    height: PNG_HEIGHT,
+                    windowWidth: PNG_WIDTH,
+                    windowHeight: PNG_HEIGHT,
                     scrollX: 0,
                     scrollY: 0,
                     useCORS: true,
@@ -1785,15 +1682,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
             /* ---------------------------------------------
-            최종 1080px 캔버스에 맞추어 배경과 합성
+            배경 + 글자 합성
             --------------------------------------------- */
-
-            const finalHeight = Math.max(MIN_HEIGHT, Math.round(textCanvas.height * (PNG_WIDTH / textCanvas.width)));
 
             const output = document.createElement("canvas");
 
-            output.width = PNG_WIDTH;
-            output.height = finalHeight;
+            output.width = textCanvas.width;
+            output.height = textCanvas.height;
 
             const context = output.getContext("2d");
 
@@ -1808,17 +1703,17 @@ document.addEventListener("DOMContentLoaded", () => {
                 const backgroundCanvas =
                     await buildBackgroundCanvas(
                         PNG_WIDTH,
-                        finalHeight,
-                        1,
-                        1
+                        PNG_HEIGHT,
+                        factor,
+                        output.width / PNG_WIDTH
                     );
 
                 context.drawImage(
                     backgroundCanvas,
                     0,
                     0,
-                    PNG_WIDTH,
-                    finalHeight
+                    output.width,
+                    output.height
                 );
 
             } else {
@@ -1828,47 +1723,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 context.fillStyle = bg.color;
 
-                context.fillRect(0, 0, PNG_WIDTH, finalHeight);
+                context.fillRect(0, 0, output.width, output.height);
             }
 
-            /* 형광펜: 글자 아래에 직접 그림 (글자 캡처와 같은 비율) */
-
-            const rectScaleX = PNG_WIDTH / currentWidth;
-            const rectScaleY = finalHeight / captureHeight;
-
-            const drawHighlights = (inBubble) => {
-
-                highlightRects
-                    .filter(rect => rect.inBubble === inBubble)
-                    .forEach(rect => {
-
-                        context.fillStyle = rect.color;
-
-                        context.fillRect(
-                            rect.x * rectScaleX,
-                            rect.y * rectScaleY,
-                            rect.width * rectScaleX,
-                            rect.height * rectScaleY
-                        );
-                    });
-            };
-
-            drawHighlights(false);
-
-            // 텍스트를 1080px 규격에 맞춰 비율대로 깔끔하게 그림
-            context.drawImage(textCanvas, 0, 0, PNG_WIDTH, finalHeight);
-
-            /* 말풍선 안의 형광펜은 말풍선 배경에 가려지므로 글자 위에 겹침 */
-
-            drawHighlights(true);
+            context.drawImage(textCanvas, 0, 0);
 
 
             /* ---------------------------------------------
-            새 창 미리보기 (아이폰 꾹 눌러 저장)
+            PNG 생성 및 새 창 미리보기 (이미지 꾹 눌러 저장 방식)
             --------------------------------------------- */
 
             const dataUrl = output.toDataURL("image/png");
 
+            // 새 창을 열어 이미지만 띄워줍니다. (아이폰 사파리에서 이미지를 꾹 눌러 '사진에 추가' 가능)
             const newWindow = window.open();
             
             if (newWindow) {
@@ -1921,12 +1788,13 @@ document.addEventListener("DOMContentLoaded", () => {
                         <div class="img-container">
                             <img src="${dataUrl}" alt="발췌 이미지">
                         </div>
-                        <p>꾹 눌러서 저장</p>
+                        <p>위 이미지를 <b>꾹 눌러서</b><br><b>'사진에 추가'</b>를 선택하세요.</p>
                     </body>
                     </html>
                 `);
                 newWindow.document.close();
             } else {
+                // 팝업 차단 등으로 새 창을 띄우지 못할 때의 안전장치
                 const link = document.createElement("a");
                 link.href = dataUrl;
                 link.download = `${fileNamePrefix}_${getDateString()}.png`;
@@ -1944,16 +1812,13 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    /* =====================================================
-       저장 버튼 이벤트 (모바일 터치 씹힘 방지 pointerdown 적용)
-    ===================================================== */
-    saveSquareButton.addEventListener("pointerdown", (event) => {
-        event.preventDefault();
+    /* 1:1 저장 버튼 클릭 이벤트 */
+    saveSquareButton.addEventListener("click", () => {
         handleSave(1080, 1080, "발췌_1x1");
     });
 
-    savePortraitButton.addEventListener("pointerdown", (event) => {
-        event.preventDefault();
+    /* 4:5 저장 버튼 클릭 이벤트 */
+    savePortraitButton.addEventListener("click", () => {
         handleSave(1080, 1350, "발췌_4x5");
     });
 
