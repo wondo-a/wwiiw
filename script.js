@@ -1658,6 +1658,30 @@ document.addEventListener("DOMContentLoaded", () => {
             clone.style.boxSizing = "border-box";
 
 
+            const highlightSpans = clone.querySelectorAll('span[style*="background-color"]');
+            
+            highlightSpans.forEach(span => {
+                const bgColor = span.style.backgroundColor;
+                
+                // 투명한 배경이 아닌 실제 형광펜 색상이 있는 경우에만 실행
+                if (bgColor && bgColor !== 'transparent' && bgColor !== 'rgba(0, 0, 0, 0)') {
+                    // 이모지나 공백이 깨지지 않도록 배열로 분해
+                    const textArr = Array.from(span.textContent);
+                    span.textContent = ''; 
+                    
+                    textArr.forEach(char => {
+                        const charSpan = document.createElement("span");
+                        charSpan.textContent = char;
+                        charSpan.style.backgroundColor = bgColor;
+                        span.appendChild(charSpan);
+                    });
+                    
+                    // 덩어리로 묶여있던 거대한 부모 배경색은 투명하게 제거
+                    span.style.backgroundColor = 'transparent'; 
+                }
+            });
+
+
             captureArea.appendChild(clone);
 
             document.body.appendChild(captureArea);
