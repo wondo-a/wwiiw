@@ -106,6 +106,13 @@ document.addEventListener("DOMContentLoaded", () => {
     /* 배경 이미지 최대 크기 (기기 저장 용량 절약) */
     const IMAGE_MAX_SIZE = 1600;
 
+    /*
+     * 저장 방식
+     * - "download" : 저장 버튼을 누르면 바로 다운로드 (아이폰은 '파일' 앱의 다운로드 폴더)
+     * - "preview"  : 화면에 미리보기를 띄우고 꾹 눌러 '사진에 추가' 또는 공유
+     */
+    const SAVE_MODE = "download";
+
 
     /* =====================================================
        설정값 (기기에 저장)
@@ -1864,75 +1871,29 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
             /* ---------------------------------------------
-            새 창 미리보기 (아이폰 꾹 눌러 저장)
+            화면 안 미리보기 (아이폰 사파리는 새 창/다운로드가 막힘)
             --------------------------------------------- */
 
-            const dataUrl = output.toDataURL("image/png");
+            const blob = await new Promise(resolve => {
 
-            const newWindow = window.open();
-            
-            if (newWindow) {
-                newWindow.document.write(`
-                    <!DOCTYPE html>
-                    <html lang="ko">
-                    <head>
-                        <meta charset="UTF-8">
-                        <title>발췌 이미지 저장</title>
-                        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-                        <style>
-                            * { box-sizing: border-box; }
-                            body {
-                                margin: 0;
-                                background: #121212;
-                                display: flex;
-                                flex-direction: column;
-                                align-items: center;
-                                justify-content: center;
-                                min-height: 100vh;
-                                color: #ffffff;
-                                font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-                                padding: 20px;
-                            }
-                            .img-container {
-                                max-width: 100%;
-                                max-height: 80vh;
-                                display: flex;
-                                justify-content: center;
-                                align-items: center;
-                            }
-                            img {
-                                max-width: 100%;
-                                max-height: 80vh;
-                                object-fit: contain;
-                                border-radius: 12px;
-                                box-shadow: 0 8px 30px rgba(0,0,0,0.6);
-                            }
-                            p {
-                                margin-top: 20px;
-                                font-size: 15px;
-                                font-weight: 500;
-                                color: #cccccc;
-                                text-align: center;
-                                line-height: 1.4;
-                            }
-                        </style>
-                    </head>
-                    <body>
-                        <div class="img-container">
-                            <img src="${dataUrl}" alt="발췌 이미지">
-                        </div>
-                        <p>꾹 눌러서 저장</p>
-                    </body>
-                    </html>
-                `);
-                newWindow.document.close();
+                output.toBlob(resolve, "image/png");
+            });
+
+            if (!blob) {
+
+                throw new Error("PNG 생성 실패");
+            }
+
+            const fileName =
+                `${fileNamePrefix}_${getDateString()}.png`;
+
+            if (SAVE_MODE === "preview") {
+
+                showSavePreview(blob, fileName);
+
             } else {
-                const link = document.createElement("a");
-                link.href = dataUrl;
-                link.download = `${fileNamePrefix}_${getDateString()}.png`;
-                document.body.appendChild(link);
-                link.click();
-                link.remove();
+
+                downloadBlob(blob, fileName);
             }
 
 
@@ -1944,6 +1905,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
+
     /* 1:1 저장 버튼 클릭 이벤트 */
     saveSquareButton.addEventListener("click", () => {
         handleSave(1080, 1080, "발췌_1x1");
@@ -1953,6 +1915,139 @@ document.addEventListener("DOMContentLoaded", () => {
     savePortraitButton.addEventListener("click", () => {
         handleSave(1080, 1350, "발췌_4x5");
     });
+
+
+    /* =====================================================
+       바로 다운로드 (blob 주소 사용)
+    ===================================================== */
+
+    function downloadBlob(blob, fileName) {
+
+        const url = URL.createObjectURL(blob);
+
+        const link = document.createElement("a");
+
+        link.href = url;
+        link.download = fileName;
+        link.style.display = "none";
+
+        document.body.appendChild(link);
+
+        link.click();
+
+        link.remove();
+
+        /* 다운로드가 시작될 시간을 준 뒤 주소 해제 */
+
+        setTimeout(() => URL.revokeObjectURL(url), 60000);
+    }
+
+
+    /* =====================================================
+       저장 미리보기 (같은 화면 위에 표시)
+       - 이미지를 꾹 눌러 "사진에 추가" 로 저장
+       - 공유 버튼 → 공유창에서 "이미지 저장"
+    ===================================================== */
+
+    function showSavePreview(blob, fileName) {
+
+        const url = URL.createObjectURL(blob);
+
+        const overlay = document.createElement("div");
+
+        overlay.style.cssText =
+            "position:fixed;top:0;left:0;right:0;bottom:0;z-index:1000;" +
+            "background:rgba(0,0,0,0.92);display:flex;flex-direction:column;" +
+            "align-items:center;justify-content:center;padding:20px;" +
+            "gap:14px;color:#fff;overflow:auto;";
+
+        const image = document.createElement("img");
+
+        image.src = url;
+
+        image.alt = "저장할 이미지";
+
+        image.style.cssText =
+            "max-width:100%;max-height:70vh;object-fit:contain;" +
+            "border-radius:10px;box-shadow:0 8px 30px rgba(0,0,0,0.6);" +
+            "-webkit-touch-callout:default;-webkit-user-select:auto;" +
+            "user-select:auto;";
+
+        const guide = document.createElement("p");
+
+        guide.textContent =
+            "이미지를 꾹 눌러 '사진에 추가'를 선택하거나, 아래 버튼을 누르세요.";
+
+        guide.style.cssText =
+            "margin:0;font-size:14px;line-height:1.4;color:#ccc;text-align:center;";
+
+        const buttons = document.createElement("div");
+
+        buttons.style.cssText = "display:flex;gap:10px;width:100%;max-width:400px;";
+
+        const buttonStyle =
+            "flex:1;min-height:46px;border-radius:8px;border:1px solid #666;" +
+            "font-size:15px;font-weight:500;cursor:pointer;";
+
+        function closePreview() {
+
+            overlay.remove();
+
+            URL.revokeObjectURL(url);
+        }
+
+        const file = new File([blob], fileName, { type: "image/png" });
+
+        /* 공유 (iOS 공유창 → 이미지 저장 / 사진에 추가) */
+
+        if (
+            navigator.canShare &&
+            navigator.canShare({ files: [file] })
+        ) {
+
+            const shareButton = document.createElement("button");
+
+            shareButton.type = "button";
+
+            shareButton.textContent = "저장 / 공유";
+
+            shareButton.style.cssText =
+                buttonStyle + "background:#0a84ff;border-color:#0a84ff;color:#fff;";
+
+            shareButton.addEventListener("click", async () => {
+
+                try {
+
+                    await navigator.share({ files: [file] });
+
+                } catch (error) {
+
+                    /* 사용자가 공유창을 닫은 경우 등은 무시 */
+                }
+            });
+
+            buttons.appendChild(shareButton);
+        }
+
+        const closeButton = document.createElement("button");
+
+        closeButton.type = "button";
+
+        closeButton.textContent = "닫기";
+
+        closeButton.style.cssText =
+            buttonStyle + "background:#333;color:#fff;";
+
+        closeButton.addEventListener("click", closePreview);
+
+        buttons.appendChild(closeButton);
+
+        overlay.appendChild(image);
+        overlay.appendChild(guide);
+        overlay.appendChild(buttons);
+
+        document.body.appendChild(overlay);
+    }
 
 
     /* =====================================================
