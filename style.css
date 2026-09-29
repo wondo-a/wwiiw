@@ -22,6 +22,10 @@ body {
     background: #ffffff;
     color: #222;
 
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+
     font-family:
         -apple-system,
         BlinkMacSystemFont,
@@ -45,7 +49,7 @@ body {
     max-width: none; /* 👈 600px 제한 해제 */
     height: 100dvh;   /* 👈 화면 세로 꽉 채우기 */
 
-    margin: 0;
+    margin: 0 auto;
     padding: 14px;
 
     background: #ffffff;
