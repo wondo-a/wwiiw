@@ -415,6 +415,15 @@ document.addEventListener("DOMContentLoaded", () => {
         editor.style.color = textColor;
 
         /* 배경 창 표시 갱신 */
+
+        bgOptions.forEach(button => {
+
+            button.classList.toggle(
+                "active",
+                button.dataset.bg === settings.bgType
+            );
+        });
+
         if (bgImage) {
 
             bgImageOption.style.backgroundImage =
@@ -1106,6 +1115,31 @@ document.addEventListener("DOMContentLoaded", () => {
        배경 선택
     ===================================================== */
 
+    bgOptions.forEach(button => {
+
+        button.addEventListener(
+            "click",
+            () => {
+
+                const type = button.dataset.bg;
+
+                /* 아직 불러온 이미지가 없으면 갤러리 열기 */
+
+                if (type === "image" && !bgImage) {
+
+                    bgImageInput.click();
+
+                    return;
+                }
+
+                settings.bgType = type;
+
+                applyBackground();
+                saveSettings();
+            }
+        );
+    });
+
     bgImagePick.addEventListener(
         "click",
         () => bgImageInput.click()
@@ -1642,6 +1676,84 @@ document.addEventListener("DOMContentLoaded", () => {
 
             captureArea.style.height = `${captureHeight}px`;
 
+            /* ---------------------------------------------
+            형광펜 위치를 브라우저 계산값으로 직접 수집
+            (html2canvas 가 인라인 배경을 줄 단위로 그리지 못해
+             문장 전체가 칠해지는 문제 방지)
+            --------------------------------------------- */
+
+            const highlightRects = [];
+
+            const areaRect = captureArea.getBoundingClientRect();
+
+            const textWalker = document.createTreeWalker(
+                clone,
+                NodeFilter.SHOW_TEXT
+            );
+
+            while (textWalker.nextNode()) {
+
+                const textNode = textWalker.currentNode;
+
+                let color = null;
+
+                let element = textNode.parentElement;
+
+                while (element && element !== clone) {
+
+                    if (
+                        element.style &&
+                        element.style.backgroundColor &&
+                        !isTransparent(element.style.backgroundColor)
+                    ) {
+                        color = element.style.backgroundColor;
+                        break;
+                    }
+
+                    element = element.parentElement;
+                }
+
+                if (!color) {
+                    continue;
+                }
+
+                const inBubble = Boolean(
+                    textNode.parentElement.closest(".bubble")
+                );
+
+                const textRange = document.createRange();
+
+                textRange.selectNodeContents(textNode);
+
+                Array.from(textRange.getClientRects()).forEach(rect => {
+
+                    if (rect.width > 0 && rect.height > 0) {
+
+                        highlightRects.push({
+                            x: rect.left - areaRect.left,
+                            y: rect.top - areaRect.top,
+                            width: rect.width,
+                            height: rect.height,
+                            color,
+                            inBubble
+                        });
+                    }
+                });
+            }
+
+            /* html2canvas 가 그리지 않도록 원래 형광펜 배경 제거 */
+
+            clone.querySelectorAll("[style]").forEach(el => {
+
+                if (
+                    el.style.backgroundColor &&
+                    !isTransparent(el.style.backgroundColor)
+                ) {
+                    el.style.backgroundColor = "transparent";
+                }
+            });
+
+
 
             /* ---------------------------------------------
             화면 기준 고화질 캡처 (scaleFactor로 1080px 확대)
@@ -1719,8 +1831,36 @@ document.addEventListener("DOMContentLoaded", () => {
                 context.fillRect(0, 0, PNG_WIDTH, finalHeight);
             }
 
+            /* 형광펜: 글자 아래에 직접 그림 (글자 캡처와 같은 비율) */
+
+            const rectScaleX = PNG_WIDTH / currentWidth;
+            const rectScaleY = finalHeight / captureHeight;
+
+            const drawHighlights = (inBubble) => {
+
+                highlightRects
+                    .filter(rect => rect.inBubble === inBubble)
+                    .forEach(rect => {
+
+                        context.fillStyle = rect.color;
+
+                        context.fillRect(
+                            rect.x * rectScaleX,
+                            rect.y * rectScaleY,
+                            rect.width * rectScaleX,
+                            rect.height * rectScaleY
+                        );
+                    });
+            };
+
+            drawHighlights(false);
+
             // 텍스트를 1080px 규격에 맞춰 비율대로 깔끔하게 그림
             context.drawImage(textCanvas, 0, 0, PNG_WIDTH, finalHeight);
+
+            /* 말풍선 안의 형광펜은 말풍선 배경에 가려지므로 글자 위에 겹침 */
+
+            drawHighlights(true);
 
 
             /* ---------------------------------------------
