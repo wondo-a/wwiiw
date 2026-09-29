@@ -1944,6 +1944,19 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
+    /* =====================================================
+       저장 버튼 이벤트 (모바일 터치 씹힘 방지 pointerdown 적용)
+    ===================================================== */
+    saveSquareButton.addEventListener("pointerdown", (event) => {
+        event.preventDefault();
+        handleSave(1080, 1080, "발췌_1x1");
+    });
+
+    savePortraitButton.addEventListener("pointerdown", (event) => {
+        event.preventDefault();
+        handleSave(1080, 1350, "발췌_4x5");
+    });
+
 
     /* =====================================================
        html2canvas 불러오기
