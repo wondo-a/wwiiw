@@ -1,0 +1,802 @@
+/* ========================================
+   기본 설정
+======================================== */
+
+* {
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+}
+
+html {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+body {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 16px;
+
+    background: #f5f5f5;
+    color: #222;
+
+    font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        Roboto,
+        "Noto Sans KR",
+        sans-serif;
+
+    overflow: hidden;
+}
+
+
+/* ========================================
+   전체 발췌기 영역
+======================================== */
+
+.extractor {
+    position: relative; /* 설정 창 위치 기준 */
+
+    width: 100%;
+    max-width: 600px;
+    height: calc(100dvh - 32px);
+
+    margin: 0 auto;
+    padding: 14px;
+
+    background: #ffffff;
+
+    border: 1px solid #cfcfcf;
+    border-radius: 12px;
+
+    display: flex;
+    flex-direction: column;
+}
+
+
+/* ========================================
+   설정바
+======================================== */
+
+.toolbar {
+    width: 100%;
+
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+
+    gap: 4px;
+
+    padding: 4px 2px 12px;
+
+    border-bottom: 1px solid #e3e3e3;
+
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: #ffffff;
+}
+
+
+/* 설정 버튼 */
+
+.toolbar button {
+    width: 38px;
+    height: 38px;
+
+    padding: 0;
+
+    border: 0;
+    border-radius: 7px;
+
+    background: transparent;
+    color: #555;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    font-size: 16px;
+
+    cursor: pointer;
+
+    transition:
+        background-color 0.15s ease,
+        color 0.15s ease;
+}
+
+/* 서식이 적용된 상태일 때의 아이콘 색상 */
+.toolbar button.applied {
+    color: #45a2ff;
+    font-weight: 900;
+}
+
+
+/* 설정바 줄바꿈 (2번째 줄 시작) */
+
+.toolbar-break {
+    flex-basis: 100%;
+    height: 0;
+}
+
+
+/* ========================================
+   형광펜 색상 표시
+======================================== */
+
+.highlight-color-wrap {
+    position: relative;
+
+    width: 34px;
+    height: 38px;
+
+    flex-shrink: 0;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    cursor: pointer;
+}
+
+.highlight-color {
+    width: 22px;
+    height: 22px;
+
+    border: 1px solid #bdbdbd;
+    border-radius: 5px;
+
+    background-color: #ffffff;
+
+    pointer-events: none;
+}
+
+/* 아이폰 색상 선택창을 여는 투명 input */
+
+.highlight-color-wrap input[type="color"] {
+    position: absolute;
+    top: 0;
+    left: 0;
+
+    width: 100%;
+    height: 100%;
+
+    margin: 0;
+    padding: 0;
+
+    border: 0;
+
+    opacity: 0;
+
+    cursor: pointer;
+}
+
+
+/* ========================================
+   설정바 내부 구분
+======================================== */
+
+.toolbar-divider {
+    width: 1px;
+    height: 24px;
+
+    margin: 0 4px;
+
+    background: #dddddd;
+}
+
+
+/* ========================================
+   글꼴 선택 / 글자 크기
+======================================== */
+
+.font-select {
+    width: 50%;
+
+    min-width: 0;
+    height: 38px;
+
+    padding: 0 30px 0 8px;
+
+    border: 1px solid #d2d2d2;
+    border-radius: 7px;
+
+    background: #ffffff;
+    color: #333;
+
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23666666' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-size: 14px;
+
+    font-size: 14px;
+}
+
+.font-size-control {
+    display: flex;
+    align-items: center;
+
+    flex-shrink: 0;
+}
+
+.font-size-value {
+    min-width: 30px;
+
+    text-align: center;
+
+    color: #333;
+
+    font-size: 15px;
+    font-variant-numeric: tabular-nums;
+}
+
+
+/* ========================================
+   입력 영역과 설정바 사이 여백
+======================================== */
+
+.editor-wrapper {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    margin-top: 14px;
+    flex: none;
+    min-height: 0;
+}
+
+
+/* ========================================
+   입력창 배경 (색상 / 이미지)
+======================================== */
+
+.editor-bg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+
+    z-index: 0;
+
+    background-color: #ffffff;
+
+    border-radius: 8px;
+
+    overflow: hidden;
+    isolation: isolate;
+
+    pointer-events: none;
+}
+
+.editor-bg-image {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+
+    display: none;
+
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
+}
+
+
+/* ========================================
+   입력창
+======================================== */
+
+.editor {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1;
+
+    padding: 40px;
+    font-size: 30px;
+
+    border: 1px solid #d2d2d2;
+    border-radius: 8px;
+    background: transparent;
+    color: #222;
+    outline: none;
+    
+    line-height: 1.65;
+    overflow-y: auto;
+    overflow-x: hidden;
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+    -webkit-user-select: text;
+    user-select: text;
+    -webkit-overflow-scrolling: touch;
+    resize: none;
+}
+
+
+/* 입력창 포커스 */
+
+.editor:focus {
+    border-color: #999999;
+}
+
+
+/* placeholder */
+
+.editor:empty::before {
+    content: attr(data-placeholder);
+
+    color: inherit;
+    opacity: 0.4;
+
+    pointer-events: none;
+}
+
+
+/* ========================================
+   말풍선
+======================================== */
+
+.bubble {
+    --bubble-bg: #26262a;
+    --bubble-text: #ffffff;
+
+    display: block;
+    width: fit-content;
+    max-width: 85%;
+    margin: 6px 0;
+    padding: 0.5em 0.85em;
+    background: var(--bubble-bg);
+    color: var(--bubble-text);
+
+    border-radius: 0em 1.2em 1.2em 1.2em;
+
+    overflow-wrap: break-word;
+
+    margin-right: auto;
+    margin-left: 10%;
+}
+
+/* ========================================
+   말풍선 (버전 2: 상대방 말풍선)
+======================================== */
+
+.bubble.bubble-other {
+    --bubble-bg: #e5e5ea;
+    --bubble-text: #000000;
+
+    margin-left: auto;
+    margin-right: 10%;
+
+    border-radius: 1.2em 1.2em 0em 1.2em;
+}
+
+
+/* ========================================
+   하단 버튼 영역
+======================================== */
+
+.bottom-actions {
+    width: 100%;
+
+    display: flex;
+    gap: 8px;
+
+    margin-top: 12px;
+}
+
+
+/* 하단 버튼 */
+
+.bottom-actions button {
+    flex: 1;
+
+    min-width: 0;
+    min-height: 46px;
+
+    padding: 10px 14px;
+
+    border: 1px solid #cfcfcf;
+    border-radius: 7px;
+
+    background: #f7f7f7;
+    color: #333;
+
+    font-size: 14px;
+    font-weight: 500;
+
+    cursor: pointer;
+
+    transition:
+        background-color 0.15s ease,
+        border-color 0.15s ease;
+}
+
+.bottom-actions button:hover {
+    background: #eeeeee;
+    border-color: #bdbdbd;
+}
+
+.bottom-actions button:active {
+    background: #e5e5e5;
+}
+
+/* ========================================
+   미리보기 비율 전환 버튼 스타일
+======================================== */
+.preview-mode-bar {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+    margin-bottom: -6px;
+    width: 100%;
+}
+
+.preview-mode-btn {
+    flex: 1;
+    padding: 8px 12px;
+    font-size: 13px;
+    font-weight: 500;
+    border: 1px solid #d2d2d2;
+    border-radius: 6px;
+    background: #f7f7f7;
+    color: #555;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.preview-mode-btn.active {
+    background: #333333;
+    color: #ffffff;
+    border-color: #333333;
+}
+
+/* ========================================
+   입력 영역 비율 전환 대응
+======================================== */
+.editor-wrapper {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 1 / 1; /* 기본 1:1 정사각형 */
+    margin-top: 14px;
+    flex: none;
+    min-height: 0;
+    transition: aspect-ratio 0.2s ease; /* 비율 전환 시 부드럽게 애니메이션 */
+}
+
+/* 4:5 비율 모드일 때 */
+.editor-wrapper.portrait {
+    aspect-ratio: 4 / 5;
+}
+
+
+/* ========================================
+   삭제 버튼
+======================================== */
+
+.clear-button {
+    color: #555;
+}
+
+
+/* ========================================
+   저장 버튼
+======================================== */
+
+.save-button {
+    background: #333333;
+    border-color: #333333;
+
+    color: #ffffff;
+}
+
+.save-button:hover {
+    background: #222222;
+    border-color: #222222;
+}
+
+.save-button:active {
+    background: #111111;
+}
+
+
+/* ========================================
+   설정 창 (행간·자간 / 배경)
+   JS에서 top 위치를 설정바 아래로 지정
+======================================== */
+
+.popover {
+    position: absolute;
+    left: 14px;
+    right: 14px;
+
+    z-index: 100;
+
+    padding: 14px;
+
+    background: #ffffff;
+
+    border: 1px solid #cccccc;
+    border-radius: 10px;
+
+    box-shadow:
+        0 6px 20px rgba(0, 0, 0, 0.12);
+
+    display: none;
+}
+
+.popover.show {
+    display: block;
+}
+
+
+/* 슬라이더 한 줄 */
+
+.panel-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    margin-bottom: 12px;
+
+    color: #555;
+
+    font-size: 14px;
+}
+
+.panel-row label {
+    width: 34px;
+
+    flex-shrink: 0;
+}
+
+.panel-row input[type="range"] {
+    flex: 1;
+
+    min-width: 0;
+}
+
+.panel-row output {
+    width: 52px;
+
+    flex-shrink: 0;
+
+    text-align: right;
+
+    font-variant-numeric: tabular-nums;
+}
+
+.panel-row.disabled {
+    opacity: 0.4;
+
+    pointer-events: none;
+}
+
+.blur-toggle {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+
+    width: auto !important;
+}
+
+.blur-toggle input {
+    width: 18px;
+    height: 18px;
+
+    margin: 0;
+}
+
+
+/* 창 안의 버튼 */
+
+.panel-button {
+    width: 100%;
+    min-height: 40px;
+
+    margin-bottom: 12px;
+
+    padding: 8px 12px;
+
+    border: 1px solid #cfcfcf;
+    border-radius: 7px;
+
+    background: #f7f7f7;
+    color: #333;
+
+    font-size: 14px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+
+    cursor: pointer;
+}
+
+#spacingPanel .panel-button {
+    margin-bottom: 0;
+}
+
+
+/* 배경 선택 */
+
+.bg-options {
+    display: flex;
+    gap: 10px;
+
+    margin-bottom: 12px;
+}
+
+.bg-option {
+    width: 44px;
+    height: 44px;
+
+    padding: 0;
+
+    border: 2px solid #cfcfcf;
+    border-radius: 10px;
+
+    background-position: center;
+    background-size: cover;
+
+    color: #777;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    font-size: 18px;
+
+    cursor: pointer;
+}
+
+.bg-option.active {
+    border-color: #0a84ff;
+    box-shadow: 0 0 0 2px rgba(10, 132, 255, 0.3);
+}
+
+.bg-option-image {
+    background-color: #eeeeee;
+}
+
+
+/* ========================================
+   모바일 최적화
+======================================== */
+
+@media (max-width: 480px) {
+
+    body {
+        padding: 10px;
+    }
+
+    .extractor {
+        height: calc(100dvh - 20px);
+
+        padding: 10px;
+
+        border-radius: 10px;
+    }
+
+    .popover {
+        left: 10px;
+        right: 10px;
+    }
+
+    .toolbar {
+        gap: 2px;
+
+        padding-bottom: 10px;
+    }
+
+    .toolbar button {
+        width: 36px;
+        height: 36px;
+
+        font-size: 15px;
+    }
+
+    .highlight-color-wrap {
+        width: 32px;
+        height: 36px;
+    }
+
+    .font-select {
+        height: 36px;
+    }
+
+    .editor-wrapper {
+        margin-top: 12px;
+    }
+
+    .editor {
+        min-height: 0;
+
+        padding: 25px;
+
+        font-size: 16px;
+        line-height: 1.65;
+    }
+
+    .bottom-actions {
+        margin-top: 10px;
+    }
+
+    .bottom-actions button {
+        min-height: 44px;
+
+        font-size: 14px;
+    }
+}
+
+
+/* ========================================
+   아주 작은 화면
+======================================== */
+
+@media (max-width: 360px) {
+
+    body {
+        padding: 6px;
+    }
+
+    .extractor {
+        height: calc(100dvh - 12px);
+
+        padding: 8px;
+    }
+
+    .toolbar button {
+        width: 34px;
+        height: 34px;
+    }
+
+    .highlight-color-wrap {
+        width: 30px;
+        height: 34px;
+    }
+
+    .font-select {
+        height: 34px;
+    }
+
+    .editor {
+        padding: 22px;
+    }
+}
+
+
+/* ========================================
+   가로 방향 모바일
+======================================== */
+
+@media (orientation: landscape) and (max-height: 500px) {
+
+    .editor {
+        min-height: 45dvh;
+    }
+}
+
+
+/* ========================================
+   접근성 / 모션 감소
+======================================== */
+
+@media (prefers-reduced-motion: reduce) {
+
+    .toolbar button,
+    .bottom-actions button {
+        transition: none;
+    }
+}

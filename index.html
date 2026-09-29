@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+
+    <!-- 모바일 화면 최적화 -->
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    >
+
+    <title>발췌기</title>
+
+    <!-- Google Fonts 연결 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <!-- Font Awesome -->
+    <link
+        rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+    >
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body spellcheck="false">
+
+    <main class="extractor">
+
+        <!-- ========================================
+             설정바
+        ========================================= -->
+        <div class="toolbar" id="toolbar">
+
+            <!-- 굵게 -->
+            <button
+                type="button"
+                id="boldButton"
+                class="toolbar-button"
+                aria-label="굵게"
+                title="굵게"
+            >
+                <i class="fa-solid fa-bold"></i>
+            </button>
+
+            <!-- 기울임 -->
+            <button
+                type="button"
+                id="italicButton"
+                class="toolbar-button"
+                aria-label="기울임"
+                title="기울임"
+            >
+                <i class="fa-solid fa-italic"></i>
+            </button>
+
+            <!-- 취소선 -->
+            <button
+                type="button"
+                id="strikeButton"
+                class="toolbar-button"
+                aria-label="취소선"
+                title="취소선"
+            >
+                <i class="fa-solid fa-strikethrough"></i>
+            </button>
+
+            <!-- 형광펜 -->
+            <button
+                type="button"
+                id="highlightButton"
+                class="toolbar-button"
+                aria-label="형광펜"
+                title="형광펜"
+            >
+                <i class="fa-solid fa-highlighter"></i>
+            </button>
+
+            <!--
+                현재 형광펜 색상
+                투명한 color input이 위에 겹쳐져 있어서
+                누르면 아이폰 기본 색상 선택창(격자/스펙트럼/슬라이더)이 열림
+            -->
+            <label class="highlight-color-wrap" title="형광펜 색상">
+                <span
+                    id="highlightColorButton"
+                    class="highlight-color"
+                ></span>
+                <input
+                    type="color"
+                    id="highlightColorInput"
+                    value="#fff176"
+                    aria-label="형광펜 색상 선택"
+                >
+            </label>
+
+            <!-- 말풍선 -->
+            <button
+                type="button"
+                id="bubbleButton"
+                class="toolbar-button"
+                aria-label="말풍선"
+                title="말풍선"
+            >
+                <i class="fa-solid fa-comment"></i>
+            </button>
+
+            <button
+                type="button"
+                id="bubbleOtherButton"
+                class="toolbar-button"
+                aria-label="상대방 말풍선"
+                title="상대방 말풍선"
+            >
+                <i class="fa-regular fa-comment" style="transform: scaleX(-1);"></i>
+            </button>
+
+            <!-- 행간 / 자간 -->
+            <button
+                type="button"
+                id="spacingButton"
+                class="toolbar-button"
+                aria-label="행간과 자간"
+                title="행간 / 자간"
+            >
+                <i class="fa-solid fa-text-height"></i>
+            </button>
+
+            <!-- 여백 -->
+            <button
+                type="button"
+                id="paddingButton"
+                class="toolbar-button"
+                aria-label="여백 조절"
+                title="여백"
+            >
+                <i class="fa-regular fa-square"></i>
+            </button>
+
+            <!-- 줄바꿈 (다음 줄로 넘김) -->
+            <div class="toolbar-break"></div>
+
+            <!-- 글꼴 (목록은 script.js의 FONT_LIST) -->
+            <select
+                id="fontSelect"
+                class="font-select"
+                aria-label="글꼴"
+            ></select>
+
+            <!-- 글자 크기 -->
+            <div class="font-size-control">
+
+                <button
+                    type="button"
+                    id="fontSizeDown"
+                    class="toolbar-button"
+                    aria-label="글자 크기 줄이기"
+                    title="글자 크기 줄이기"
+                >
+                    <i class="fa-solid fa-minus"></i>
+                </button>
+
+                <span
+                    id="fontSizeValue"
+                    class="font-size-value"
+                    aria-live="polite"
+                >16</span>
+
+                <button
+                    type="button"
+                    id="fontSizeUp"
+                    class="toolbar-button"
+                    aria-label="글자 크기 키우기"
+                    title="글자 크기 키우기"
+                >
+                    <i class="fa-solid fa-plus"></i>
+                </button>
+            </div>
+
+            <!-- 배경 -->
+            <button
+                type="button"
+                id="backgroundButton"
+                class="toolbar-button"
+                aria-label="배경"
+                title="배경"
+            >
+                <i class="fa-solid fa-image"></i>
+            </button>
+
+        </div>
+
+
+        <!-- ========================================
+             입력 영역
+        ========================================= -->
+        <div class="editor-wrapper">
+
+            <!-- 배경 (색상 또는 이미지) -->
+            <div
+                id="editorBg"
+                class="editor-bg"
+                aria-hidden="true"
+            >
+                <div
+                    id="editorBgImage"
+                    class="editor-bg-image"
+                ></div>
+            </div>
+
+            <div
+                id="editor"
+                class="editor"
+                contenteditable="true"
+                role="textbox"
+                aria-multiline="true"
+                data-placeholder="내용 입력 혹은 붙여넣기"
+            ></div>
+
+        </div>
+
+
+        <!-- ========================================
+             하단 버튼
+        ========================================= -->
+
+        <div class="preview-mode-bar">
+            <button type="button" id="viewSquareBtn" class="preview-mode-btn active">
+                <i class="fa-solid fa-border-top-left"></i>&nbsp;
+                1:1
+            </button>
+
+            <button type="button" id="viewPortraitBtn" class="preview-mode-btn">
+                <i class="fa-solid fa-border-top-left"></i>&nbsp;
+                4:5
+            </button>
+        </div>
+
+        <div class="bottom-actions">
+
+            <!-- 입력 내용 전체 삭제 -->
+            <button
+                type="button"
+                id="clearButton"
+                class="clear-button"
+            >
+                <i class="fa-solid fa-trash"></i>&nbsp;
+                <span>삭제</span>
+            </button>
+
+            <!-- PNG 저장 -->
+            <button
+                type="button"
+                id="saveSquareButton"
+                class="save-button"
+            >
+                <i class="fa-solid fa-download"></i>&nbsp;
+                <span>1:1</span>
+            </button>
+
+            <button
+                type="button"
+                id="savePortraitButton"
+                class="save-button"
+            >
+                <i class="fa-solid fa-download"></i>&nbsp;
+                <span>4:5</span>
+            </button>
+
+        </div>
+
+
+        <!-- ========================================
+             행간 / 자간 창
+        ========================================= -->
+        <div
+            id="spacingPanel"
+            class="popover"
+            aria-hidden="true"
+        >
+
+            <div class="panel-row">
+                <label for="lineHeightRange">행간</label>
+                <input
+                    type="range"
+                    id="lineHeightRange"
+                    min="1"
+                    max="3"
+                    step="0.05"
+                >
+                <output id="lineHeightValue"></output>
+            </div>
+
+            <div class="panel-row">
+                <label for="letterSpacingRange">자간</label>
+                <input
+                    type="range"
+                    id="letterSpacingRange"
+                    min="-0.05"
+                    max="0.3"
+                    step="0.01"
+                >
+                <output id="letterSpacingValue"></output>
+            </div>
+
+            <button
+                type="button"
+                id="spacingReset"
+                class="panel-button"
+            >
+                초기화
+            </button>
+
+        </div>
+
+        <!-- ========================================
+             여백 창
+        ========================================= -->
+        <div
+            id="paddingPanel"
+            class="popover"
+            aria-hidden="true"
+        >
+            <div class="panel-row">
+                <label for="paddingRange">여백</label>
+                <input
+                    type="range"
+                    id="paddingRange"
+                    min="0"
+                    max="120"
+                    step="1"
+                >
+                <output id="paddingValue"></output>
+            </div>
+            <button
+                type="button"
+                id="paddingReset"
+                class="panel-button"
+            >
+                초기화
+            </button>
+        </div>
+
+
+        <!-- ========================================
+             배경 창
+        ========================================= -->
+        <div
+            id="backgroundPanel"
+            class="popover"
+            aria-hidden="true"
+        >
+
+            <div class="bg-options">
+
+                <button
+                    type="button"
+                    class="bg-option"
+                    data-bg="white"
+                    aria-label="흰색 배경"
+                    style="background:#ffffff;"
+                ></button>
+
+                <button
+                    type="button"
+                    class="bg-option"
+                    data-bg="black"
+                    aria-label="검은색 배경"
+                    style="background:#000000;"
+                ></button>
+
+                <button
+                    type="button"
+                    class="bg-option"
+                    data-bg="gray"
+                    aria-label="어두운 회색 배경"
+                    style="background:#3a3a3c;"
+                ></button>
+
+                <button
+                    type="button"
+                    class="bg-option bg-option-image"
+                    id="bgImageOption"
+                    data-bg="image"
+                    aria-label="이미지 배경"
+                >
+                    <i class="fa-regular fa-image"></i>
+                </button>
+
+            </div>
+
+            <button
+                type="button"
+                id="bgImagePick"
+                class="panel-button"
+            >
+                <i class="fa-solid fa-images"></i>
+                <span>갤러리에서 이미지 선택</span>
+            </button>
+
+            <input
+                type="file"
+                id="bgImageInput"
+                accept="image/*"
+                hidden
+            >
+
+            <div class="panel-row" id="blurRow">
+                <label class="blur-toggle">
+                    <input type="checkbox" id="blurToggle">
+                    <span>블러</span>
+                </label>
+                <input
+                    type="range"
+                    id="blurRange"
+                    min="1"
+                    max="40"
+                    step="1"
+                >
+                <output id="blurValue"></output>
+            </div>
+
+        </div>
+
+    </main>
+
+
+    <!-- JavaScript -->
+    <script src="script.js"></script>
+
+</body>
+</html>
