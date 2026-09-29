@@ -1968,6 +1968,42 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
+    /* 1:1 저장 버튼 클릭 이벤트 */
+    saveSquareButton.addEventListener("click", () => {
+        handleSave(1080, 1080, "발췌_1x1");
+    });
+
+    /* 4:5 저장 버튼 클릭 이벤트 */
+    savePortraitButton.addEventListener("click", () => {
+        handleSave(1080, 1350, "발췌_4x5");
+    });
+
+    /* =====================================================
+       배경 선택 버튼 이벤트 (초기 1회만 등록)
+    ===================================================== */
+    bgOptions.forEach(button => {
+        button.addEventListener(
+            "pointerdown",
+            (event) => {
+                event.preventDefault(); // 모바일 터치 지연 및 중복 방지
+
+                const type = button.dataset.bg;
+
+                if (type === "image") {
+                    if (!bgImage) {
+                        bgImageInput.click();
+                        return;
+                    }
+                }
+
+                settings.bgType = type;
+
+                applyBackground();
+                saveSettings();
+            }
+        );
+    });
+
 
     /* =====================================================
        html2canvas 불러오기
