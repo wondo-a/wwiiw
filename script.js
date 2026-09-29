@@ -415,15 +415,6 @@ document.addEventListener("DOMContentLoaded", () => {
         editor.style.color = textColor;
 
         /* 배경 창 표시 갱신 */
-
-        bgOptions.forEach(button => {
-
-            button.classList.toggle(
-                "active",
-                button.dataset.bg === settings.bgType
-            );
-        });
-
         if (bgImage) {
 
             bgImageOption.style.backgroundImage =
@@ -1278,7 +1269,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             if (
                 event.target.closest(
-                    ".popover, #spacingButton, #backgroundButton, #paddingButton"
+                    ".popover, #spacingButton, #backgroundButton, #paddingButton, .bg-option, #bgImagePick, #blurToggle, input[type='range']"
                 )
             ) {
                 return;
@@ -1726,62 +1717,71 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
             /* ---------------------------------------------
-            PNG 생성 및 모바일 최적화 공유/미리보기 팝업
+            PNG 생성 및 새 창 미리보기 (이미지 꾹 눌러 저장 방식)
             --------------------------------------------- */
 
             const dataUrl = output.toDataURL("image/png");
 
-            // 1. 모바일 기기(아이폰/안드로이드)에서 네이티브 공유 시트(사진 저장/공유 팝업) 지원 여부 확인
-            if (navigator.share && navigator.canShare) {
-                try {
-                    // DataURL을 File 객체로 변환
-                    const res = await fetch(dataUrl);
-                    const blob = await res.blob();
-                    const file = new File([blob], `${fileNamePrefix}_${getDateString()}.png`, { type: "image/png" });
-
-                    const shareData = {
-                        files: [file]
-                    };
-
-                    if (navigator.canShare(shareData)) {
-                        await navigator.share(shareData);
-                        return; // 공유 창이 정상적으로 뜨면 여기서 종료
-                    }
-                } catch (err) {
-                    // 사용자가 공유를 취소했거나 에러가 난 경우 아래의 대체 로직으로 Fallback
-                    if (err.name !== "AbortError") {
-                        console.log("공유 API 사용 불가, 대체 팝업 실행", err);
-                    } else {
-                        return; // 사용자가 의도적으로 취소한 경우는 무시
-                    }
-                }
-            }
-
-            // 2. 공유 API를 지원하지 않는 환경이거나 에러 시: 새 창에서 이미지를 띄워 꾹 눌러 저장할 수 있게 처리
+            // 새 창을 열어 이미지만 띄워줍니다. (아이폰 사파리에서 이미지를 꾹 눌러 '사진에 추가' 가능)
             const newWindow = window.open();
+            
             if (newWindow) {
                 newWindow.document.write(`
                     <!DOCTYPE html>
                     <html lang="ko">
                     <head>
                         <meta charset="UTF-8">
-                        <title>이미지 미리보기</title>
-                        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                        <title>발췌 이미지 저장</title>
+                        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
                         <style>
-                            body { margin: 0; background: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; color: #fff; font-family: sans-serif; }
-                            img { max-width: 100%; max-height: 85vh; object-fit: contain; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); }
-                            p { margin-top: 15px; font-size: 14px; opacity: 0.8; text-align: center; padding: 0 20px; }
+                            * { box-sizing: border-box; }
+                            body {
+                                margin: 0;
+                                background: #121212;
+                                display: flex;
+                                flex-direction: column;
+                                align-items: center;
+                                justify-content: center;
+                                min-height: 100vh;
+                                color: #ffffff;
+                                font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+                                padding: 20px;
+                            }
+                            .img-container {
+                                max-width: 100%;
+                                max-height: 80vh;
+                                display: flex;
+                                justify-content: center;
+                                align-items: center;
+                            }
+                            img {
+                                max-width: 100%;
+                                max-height: 80vh;
+                                object-fit: contain;
+                                border-radius: 12px;
+                                box-shadow: 0 8px 30px rgba(0,0,0,0.6);
+                            }
+                            p {
+                                margin-top: 20px;
+                                font-size: 15px;
+                                font-weight: 500;
+                                color: #cccccc;
+                                text-align: center;
+                                line-height: 1.4;
+                            }
                         </style>
                     </head>
                     <body>
-                        <img src="${dataUrl}" alt="발췌 이미지">
-                        <p>이미지를 꾹 눌러서 <b>'사진에 추가'</b> 또는 <b>'저장'</b>하세요.</p>
+                        <div class="img-container">
+                            <img src="${dataUrl}" alt="발췌 이미지">
+                        </div>
+                        <p>위 이미지를 <b>꾹 눌러서</b><br><b>'사진에 추가'</b>를 선택하세요.</p>
                     </body>
                     </html>
                 `);
                 newWindow.document.close();
             } else {
-                // 팝업 차단 등으로 새 창을 못 띄울 때의 최후의 수단
+                // 팝업 차단 등으로 새 창을 띄우지 못할 때의 안전장치
                 const link = document.createElement("a");
                 link.href = dataUrl;
                 link.download = `${fileNamePrefix}_${getDateString()}.png`;
@@ -1789,6 +1789,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 link.click();
                 link.remove();
             }
+
 
         } catch (error) {
 
@@ -1900,6 +1901,8 @@ document.addEventListener("DOMContentLoaded", () => {
         );
 
         const range = selection.getRangeAt(0);
+
+        const currentBubble = closestBubble(range.startContainer);
 
         // 형광펜 버튼
         highlightButton.classList.toggle(
