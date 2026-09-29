@@ -118,7 +118,7 @@ document.addEventListener("DOMContentLoaded", () => {
         highlightColor: "#fff176",
 
         fontFamily: FONT_LIST[0].name,
-        fontSize: 30,
+        fontSize: 15,
         lineHeight: 1.65,
         letterSpacing: 0,
         editorPadding: 40,
