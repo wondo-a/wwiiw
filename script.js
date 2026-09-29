@@ -1762,6 +1762,16 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
+    /* 1:1 저장 버튼 클릭 이벤트 */
+    saveSquareButton.addEventListener("click", () => {
+        handleSave(1080, 1080, "발췌_1x1");
+    });
+
+    /* 4:5 저장 버튼 클릭 이벤트 */
+    savePortraitButton.addEventListener("click", () => {
+        handleSave(1080, 1350, "발췌_4x5");
+    });
+
 
     /* =====================================================
        html2canvas 불러오기
