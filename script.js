@@ -1478,12 +1478,16 @@ document.addEventListener("DOMContentLoaded", () => {
             // 말풍선 내부 텍스트가 좁아지지 않도록 대기
             await new Promise(resolve => setTimeout(resolve, 100));
 
-            // 3. html-to-image로 고해상도 캡처
+            // 3. html-to-image로 고해상도 캡처 (화질 대폭 개선)
+            const scale = 3; // 기존 2배율에서 3배율 고해상도로 상향 조정
+
             const blob = await htmlToImage.toBlob(editorWrapper, {
-                pixelRatio: 2, 
+                pixelRatio: scale, 
                 quality: 1.0,
                 width: exactWidth,
                 height: scrollHeight,
+                canvasWidth: exactWidth * scale,
+                canvasHeight: scrollHeight * scale,
                 style: {
                     margin: "0",
                     width: `${exactWidth}px`,
