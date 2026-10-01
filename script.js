@@ -56,10 +56,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const editorBg = document.getElementById("editorBg");
     const editorBgImage = document.getElementById("editorBgImage");
 
+    const clearCacheButton = document.getElementById("clearCacheButton");
     const clearButton = document.getElementById("clearButton");
+    const saveImageButton = document.getElementById("saveImageButton");
     const editorWrapper = document.querySelector(".editor-wrapper");
-    const viewSquareBtn = document.getElementById("saveSquareButton");
-    const viewPortraitBtn = document.getElementById("savePortraitButton");
 
     /* =====================================================
        코드에서 미리 지정하는 값
@@ -77,8 +77,8 @@ document.addEventListener("DOMContentLoaded", () => {
      * (첫 번째 글꼴이 기본 글꼴)
      */
     const FONT_LIST = [
-        { name: "Gowun Batang", weights: "400;700" },
         { name: "Gowun Dodum" },
+        { name: "Gowun Batang", weights: "400;700" },
         { name: "IBM Plex Sans KR", weights: "400;700" },
         { name: "Nanum Pen Script" }
     ];
@@ -389,24 +389,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (useImage) {
 
-            const margin = getBlurMargin();
-
             editorBgImage.style.display = "block";
 
             editorBgImage.style.backgroundImage =
                 `url("${bgImage}")`;
 
-            /* 블러 가장자리가 비치지 않도록 바깥으로 넓혀서 채움 */
-            editorBgImage.style.top = `${-margin}px`;
-            editorBgImage.style.left = `${-margin}px`;
-            editorBgImage.style.right = `${-margin}px`;
-            editorBgImage.style.bottom = `${-margin}px`;
+            /* 이미지 확대(Zoom) 현상을 방지하기 위해 강제 여백 확장을 제거하고 기본값으로 고정 */
+            editorBgImage.style.top = "0";
+            editorBgImage.style.left = "0";
+            editorBgImage.style.right = "0";
+            editorBgImage.style.bottom = "0";
 
             editorBgImage.style.filter = settings.bgBlurOn
                 ? `blur(${settings.bgBlurSize}px)`
                 : "none";
-
-            editorBg.style.backgroundColor = "#000000";
 
             textColor = settings.bgTextLight
                 ? IMAGE_TEXT_LIGHT
@@ -1118,6 +1114,28 @@ document.addEventListener("DOMContentLoaded", () => {
        배경 선택
     ===================================================== */
 
+    bgOptions.forEach(button => {
+        button.addEventListener("click", () => {
+            const bgType = button.getAttribute("data-bg");
+
+            // 이미지 배경을 선택했는데 아직 등록된 이미지가 없다면 갤러리 열기
+            if (bgType === "image" && !bgImage) {
+                bgImageInput.click();
+                return;
+            }
+
+            // 설정값 변경 및 적용
+            settings.bgType = bgType;
+            
+            // 시각적으로 선택된 버튼 표시 (CSS의 .active 활용)
+            bgOptions.forEach(btn => btn.classList.remove("active"));
+            button.classList.add("active");
+
+            applyBackground();
+            saveSettings();
+        });
+    });
+
     bgImagePick.addEventListener(
         "click",
         () => bgImageInput.click()
@@ -1346,6 +1364,30 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     );
 
+    /* =====================================================
+       캐시(기기 저장 설정) 삭제 기능 추가
+    ===================================================== */
+
+    clearCacheButton.addEventListener(
+        "click",
+        () => {
+            const confirmed = window.confirm(
+                "기기에 저장된 설정과 배경 이미지 캐시를 모두 삭제하시겠습니까?\n(확인 시 초기화되며 페이지가 새로고침됩니다.)"
+            );
+
+            if (!confirmed) {
+                return;
+            }
+
+            // 기기에 저장된 설정 키 제거
+            localStorage.removeItem(STORAGE_KEY);
+            localStorage.removeItem(IMAGE_KEY);
+
+            // 초기화를 위해 페이지 새로고침
+            window.location.reload();
+        }
+    );
+
 
     /* =====================================================
        전체 삭제
@@ -1377,157 +1419,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     /* =====================================================
-       PNG 저장용: 배경 이미지 그리기 / 블러
+       PNG 저장용 폰트 대기 및 html-to-image 캡처
     ===================================================== */
 
-    function drawCover(context, image, width, height) {
-
-        const scale = Math.max(
-            width / image.naturalWidth,
-            height / image.naturalHeight
-        );
-
-        const drawWidth = image.naturalWidth * scale;
-        const drawHeight = image.naturalHeight * scale;
-
-        context.drawImage(
-            image,
-            (width - drawWidth) / 2,
-            (height - drawHeight) / 2,
-            drawWidth,
-            drawHeight
-        );
-    }
-
-    /* 한 방향 박스 블러 */
-
-    function blurPass(source, target, width, height, radius, horizontal) {
-
-        const length = horizontal ? width : height;
-        const lines = horizontal ? height : width;
-
-        const step = horizontal ? 4 : width * 4;
-        const lineStep = horizontal ? width * 4 : 4;
-
-        const divisor = radius * 2 + 1;
-
-        for (let line = 0; line < lines; line++) {
-
-            const base = line * lineStep;
-
-            for (let channel = 0; channel < 4; channel++) {
-
-                let sum = 0;
-
-                for (let k = -radius; k <= radius; k++) {
-
-                    const index = Math.min(length - 1, Math.max(0, k));
-
-                    sum += source[base + index * step + channel];
-                }
-
-                for (let i = 0; i < length; i++) {
-
-                    target[base + i * step + channel] = sum / divisor;
-
-                    const add = Math.min(length - 1, i + radius + 1);
-                    const sub = Math.max(0, i - radius);
-
-                    sum +=
-                        source[base + add * step + channel] -
-                        source[base + sub * step + channel];
-                }
-            }
-        }
-    }
-
-    /* 박스 블러 3회 ≈ 가우시안 블러 (CSS blur 와 비슷한 결과) */
-
-    function gaussianBlur(data, width, height, sigma) {
-
-        const radius = Math.max(
-            1,
-            Math.round((Math.sqrt(12 * sigma * sigma / 3 + 1) - 1) / 2)
-        );
-
-        const buffer = new Uint8ClampedArray(data.length);
-
-        for (let i = 0; i < 3; i++) {
-
-            blurPass(data, buffer, width, height, radius, true);
-            blurPass(buffer, data, width, height, radius, false);
-        }
-    }
-
-    /*
-     * 저장할 PNG 크기에 맞춘 배경 이미지 canvas
-     * factor : PNG 너비 / 화면 입력창 너비 (블러 크기를 화면과 같은 비율로 맞춤)
-     */
-
-    async function buildBackgroundCanvas(width, height, factor, pixelRatio) {
-
-        const image = await loadImageElement(bgImage);
-
-        const sigma = settings.bgBlurOn
-            ? settings.bgBlurSize * factor
-            : 0;
-
-        const margin = sigma > 0 ? Math.ceil(sigma * 2) : 0;
-
-        /* 블러가 있으면 어차피 흐려지므로 1배 해상도로 처리 */
-
-        const ratio = sigma > 0 ? 1 : pixelRatio;
-
-        const fullWidth = Math.round((width + margin * 2) * ratio);
-        const fullHeight = Math.round((height + margin * 2) * ratio);
-
-        const canvas = document.createElement("canvas");
-
-        canvas.width = fullWidth;
-        canvas.height = fullHeight;
-
-        const context = canvas.getContext("2d");
-
-        drawCover(context, image, fullWidth, fullHeight);
-
-        if (sigma > 0) {
-
-            const imageData =
-                context.getImageData(0, 0, fullWidth, fullHeight);
-
-            gaussianBlur(imageData.data, fullWidth, fullHeight, sigma);
-
-            context.putImageData(imageData, 0, 0);
-        }
-
-        if (margin === 0) {
-            return canvas;
-        }
-
-        const cropped = document.createElement("canvas");
-
-        cropped.width = width;
-        cropped.height = height;
-
-        cropped.getContext("2d").drawImage(
-            canvas,
-            margin,
-            margin,
-            width,
-            height,
-            0,
-            0,
-            width,
-            height
-        );
-
-        return cropped;
-    }
-
     /* PNG 저장 전에 글꼴이 실제로 로드되었는지 확인 */
-
     async function ensureFontsReady() {
-
         if (!document.fonts || !document.fonts.load) {
             return;
         }
@@ -1537,35 +1433,103 @@ document.addEventListener("DOMContentLoaded", () => {
         const text = editor.textContent;
 
         try {
-
             await Promise.all([
                 document.fonts.load(`400 ${size} ${family}`, text),
                 document.fonts.load(`700 ${size} ${family}`, text)
             ]);
-
             await document.fonts.ready;
-
         } catch (error) {
-
             console.warn("글꼴 로딩 확인 실패", error);
         }
     }
 
-    /* =====================================================
-       미리보기 비율 전환 기능 (1:1 / 4:5)
-    ===================================================== */
-    viewSquareBtn.addEventListener("click", () => {
-        editorWrapper.classList.remove("portrait");
-        viewSquareBtn.classList.add("active");
-        viewPortraitBtn.classList.remove("active");
-    });
+    saveImageButton.addEventListener("click", async () => {
+        if (!window.htmlToImage) {
+            alert("이미지 저장 기능을 불러오지 못했습니다. 페이지를 새로고침 해주세요.");
+            return;
+        }
 
-    viewPortraitBtn.addEventListener("click", () => {
-        editorWrapper.classList.add("portrait");
-        viewPortraitBtn.classList.add("active");
-        viewSquareBtn.classList.remove("active");
-    });
+        try {
+            // 1. 폰트가 렌더링될 때까지 대기
+            await ensureFontsReady();
 
+            // 2. 캡처 시 레이아웃 오차 및 우측 여백/말풍선 줄바꿈 문제 원인 차단
+            const originalHeight = editorWrapper.style.height;
+            const originalAspectRatio = editorWrapper.style.aspectRatio;
+            const originalWidth = editorWrapper.style.width;
+            const originalMarginLeft = editorWrapper.style.marginLeft;
+            const originalMarginRight = editorWrapper.style.marginRight;
+
+            // 캡처 순간에만 래퍼의 박스 모델을 정확한 정방향(오른쪽 여백 제거 및 너비 고정)으로 강제 보정
+            editorWrapper.style.aspectRatio = "auto";
+            editorWrapper.style.width = "100%";
+            editorWrapper.style.marginLeft = "0";
+            editorWrapper.style.marginRight = "0";
+
+            // 브라우저가 변경된 레이아웃을 계산할 수 있도록 대기
+            await new Promise(resolve => setTimeout(resolve, 50));
+
+            const scrollHeight = editor.scrollHeight;
+            const exactWidth = editorWrapper.clientWidth; // 정확한 내부 너비 측정 (우측 여백 원인 차단)
+
+            editorWrapper.style.height = `${scrollHeight}px`;
+            editor.style.overflowY = "hidden"; // 캡처 시 스크롤바 숨김
+
+            // 말풍선 내부 텍스트가 좁아지지 않도록 대기
+            await new Promise(resolve => setTimeout(resolve, 100));
+
+            // 3. html-to-image로 고해상도 캡처
+            const blob = await htmlToImage.toBlob(editorWrapper, {
+                pixelRatio: 2, 
+                quality: 1.0,
+                width: exactWidth,
+                height: scrollHeight,
+                style: {
+                    margin: "0",
+                    width: `${exactWidth}px`,
+                    height: `${scrollHeight}px`,
+                    aspectRatio: "auto"
+                }
+            });
+
+            // 4. 조작했던 스타일 원상 복구
+            editorWrapper.style.height = originalHeight;
+            editorWrapper.style.aspectRatio = originalAspectRatio;
+            editorWrapper.style.width = originalWidth;
+            editorWrapper.style.marginLeft = originalMarginLeft;
+            editorWrapper.style.marginRight = originalMarginRight;
+            editor.style.overflowY = "auto";
+
+            // 5. 공유 창 띄우기 (아이폰 사진첩 직행) 또는 일반 다운로드
+            const file = new File([blob], "excerpt.png", { type: "image/png" });
+
+            if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                await navigator.share({
+                    files: [file],
+                    title: '발췌기 이미지'
+                });
+            } else {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = "excerpt.png";
+                a.click();
+                URL.revokeObjectURL(url);
+            }
+
+        } catch (error) {
+            console.error(error);
+            alert("이미지 캡처 중 문제가 발생했습니다.");
+            
+            // 오류 발생 시에도 무조건 원래 상태로 복구
+            editorWrapper.style.height = "";
+            editorWrapper.style.aspectRatio = "";
+            editorWrapper.style.width = "";
+            editorWrapper.style.marginLeft = "";
+            editorWrapper.style.marginRight = "";
+            editor.style.overflowY = "auto";
+        }
+    });
 
     /* =====================================================
        현재 서식 버튼 상태
