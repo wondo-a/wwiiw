@@ -254,6 +254,8 @@ body {
     flex: none;
     min-height: 0;
     transition: aspect-ratio 0.2s ease;
+    display: flex;
+    flex-direction: column;
 }
 
 
@@ -299,11 +301,8 @@ body {
 ======================================== */
 
 .editor {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
+    position: relative;
+    flex: 1;
     z-index: 1;
 
     border-radius: 0;
@@ -317,7 +316,8 @@ body {
     outline: none;
     
     line-height: 1.65;
-    overflow-y: auto;
+    
+    overflow-y: visible;
     overflow-x: hidden;
     white-space: pre-wrap;
     overflow-wrap: break-word;
