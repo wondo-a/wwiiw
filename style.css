@@ -251,9 +251,10 @@ body {
     margin-right: -14px;
     aspect-ratio: 1 / 1;
     margin-top: 14px;
-    flex: none;
-    min-height: 0;
+
+    flex-shrink: 0;
     transition: aspect-ratio 0.2s ease;
+    
     display: flex;
     flex-direction: column;
 }
@@ -301,8 +302,9 @@ body {
 ======================================== */
 
 .editor {
+    /* 👈 둥둥 떠서 박스 크기에 영향을 못 주던 absolute를 해제 */
     position: relative;
-    flex: 1;
+    flex-grow: 1; /* 기본 1:1 공간을 꽉 채움 */
     z-index: 1;
 
     border-radius: 0;
@@ -317,7 +319,7 @@ body {
     
     line-height: 1.65;
     
-    overflow-y: visible;
+    overflow-y: visible; 
     overflow-x: hidden;
     white-space: pre-wrap;
     overflow-wrap: break-word;

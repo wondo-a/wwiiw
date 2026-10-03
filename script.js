@@ -221,6 +221,9 @@ document.addEventListener("DOMContentLoaded", () => {
             link.href =
                 `https://fonts.googleapis.com/css2?family=${family}${weight}&display=swap`;
 
+            /* html-to-image가 폰트를 차단 없이 읽어서 이미지에 구울 수 있도록 보안 권한 허용 추가 */
+            link.crossOrigin = "anonymous";
+
             document.head.appendChild(link);
         });
     }
@@ -1492,7 +1495,8 @@ document.addEventListener("DOMContentLoaded", () => {
                     margin: "0",
                     width: `${exactWidth}px`,
                     height: `${scrollHeight}px`,
-                    aspectRatio: "auto"
+                    aspectRatio: "auto",
+                    fontFamily: editor.style.fontFamily
                 }
             });
 
