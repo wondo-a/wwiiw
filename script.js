@@ -1496,6 +1496,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
             editor.innerHTML = "";
 
+            editorWrapper.style.display = "none";
+            void editorWrapper.offsetHeight; // 브라우저에 크기 재계산 지시
+            editorWrapper.style.display = "flex";
+
             editorWrapper.style.height = "";
             editorWrapper.style.width = "";
 
