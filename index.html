@@ -70,6 +70,42 @@
                 <i class="fa-solid fa-strikethrough"></i>
             </button>
 
+            <!-- 행간 / 자간 -->
+            <button
+                type="button"
+                id="spacingButton"
+                class="toolbar-button"
+                aria-label="행간과 자간"
+                title="행간 / 자간"
+            >
+                <i class="fa-solid fa-text-height"></i>
+            </button>
+
+            <!-- 여백 -->
+            <button
+                type="button"
+                id="paddingButton"
+                class="toolbar-button"
+                aria-label="여백 조절"
+                title="여백"
+            >
+                <i class="fa-regular fa-square"></i>
+            </button>
+
+            <!-- 배경 -->
+            <button
+                type="button"
+                id="backgroundButton"
+                class="toolbar-button"
+                aria-label="배경"
+                title="배경"
+            >
+                <i class="fa-solid fa-image"></i>
+            </button>
+
+            <!-- 줄바꿈 (다음 줄로 넘김) -->
+            <div class="toolbar-break"></div>
+
             <!-- 형광펜 -->
             <button
                 type="button"
@@ -120,27 +156,30 @@
                 <i class="fa-regular fa-comment" style="transform: scaleX(-1);"></i>
             </button>
 
-            <!-- 행간 / 자간 -->
+            <!-- 텍스트 박스 생성 버튼 -->
             <button
                 type="button"
-                id="spacingButton"
+                id="boxButton"
                 class="toolbar-button"
-                aria-label="행간과 자간"
-                title="행간 / 자간"
+                aria-label="텍스트 박스"
+                title="텍스트 박스"
             >
-                <i class="fa-solid fa-text-height"></i>
+                <i class="fa-solid fa-envelope"></i>
             </button>
 
-            <!-- 여백 -->
-            <button
-                type="button"
-                id="paddingButton"
-                class="toolbar-button"
-                aria-label="여백 조절"
-                title="여백"
-            >
-                <i class="fa-regular fa-square"></i>
-            </button>
+            <!-- 텍스트 박스 색상 -->
+            <label class="highlight-color-wrap" title="텍스트 박스 색상">
+                <span
+                    id="boxColorButton"
+                    class="highlight-color"
+                ></span>
+                <input
+                    type="color"
+                    id="boxColorInput"
+                    value="#f2f2f7"
+                    aria-label="박스 색상 선택"
+                >
+            </label>
 
             <!-- 줄바꿈 (다음 줄로 넘김) -->
             <div class="toolbar-break"></div>
@@ -181,17 +220,6 @@
                     <i class="fa-solid fa-plus"></i>
                 </button>
             </div>
-
-            <!-- 배경 -->
-            <button
-                type="button"
-                id="backgroundButton"
-                class="toolbar-button"
-                aria-label="배경"
-                title="배경"
-            >
-                <i class="fa-solid fa-image"></i>
-            </button>
 
         </div>
 

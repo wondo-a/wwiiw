@@ -68,6 +68,7 @@ body {
 
     display: flex;
     align-items: center;
+    justify-content: center;
     flex-wrap: wrap;
 
     gap: 4px;
@@ -246,9 +247,9 @@ body {
 
 .editor-wrapper {
     position: relative;
-    width: calc(100% + 28px);
-    margin-left: -14px;
-    margin-right: -14px;
+    width: 100%;
+    left: 0;
+    right: 0;
     aspect-ratio: 1 / 1;
     margin-top: 14px;
 
@@ -386,6 +387,21 @@ body {
     margin-right: 0;
 
     border-radius: 1.2em 1.2em 0em 1.2em;
+}
+
+
+/* ========================================
+   텍스트 박스 (메시지 박스)
+======================================== */
+
+.message-box {
+    display: block;
+    width: 100%;
+    margin: 8px 0;
+    padding: 16px 20px;
+    border-radius: 8px;
+    color: inherit;
+    overflow-wrap: break-word;
 }
 
 

@@ -18,6 +18,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const bubbleButton = document.getElementById("bubbleButton");
     const bubbleOtherButton = document.getElementById("bubbleOtherButton");
+    
+    const boxButton = document.getElementById("boxButton");
+    const boxColorButton = document.getElementById("boxColorButton");
+    const boxColorInput = document.getElementById("boxColorInput");
 
     const spacingButton = document.getElementById("spacingButton");
     const backgroundButton = document.getElementById("backgroundButton");
@@ -111,6 +115,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const defaultSettings = {
         highlightColor: "#fff176",
+        boxColor: "#ebebeb",
 
         fontFamily: FONT_LIST[0].name,
         fontSize: 15,
@@ -612,7 +617,8 @@ document.addEventListener("DOMContentLoaded", () => {
         italicButton,
         strikeButton,
         highlightButton,
-        bubbleButton
+        bubbleButton,
+        boxButton
     ].forEach(button => {
 
         button.addEventListener(
@@ -1028,6 +1034,78 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     /* =====================================================
+       텍스트 박스 기능 추가
+    ===================================================== */
+    
+    function updateBoxColorDisplay() {
+        boxColorButton.style.backgroundColor = settings.boxColor;
+        boxColorInput.value = settings.boxColor;
+    }
+
+    function closestBox(node) {
+        const element = node.nodeType === Node.ELEMENT_NODE ? node : node.parentElement;
+        return element ? element.closest(".message-box") : null;
+    }
+
+    boxButton.addEventListener("click", () => {
+        if (!hasSavedSelection()) return;
+        focusEditorWithSelection();
+        const range = currentRange();
+        if (!range) return;
+
+        const startBox = closestBox(range.startContainer);
+        const endBox = closestBox(range.endContainer);
+
+        // 이미 텍스트 박스 안이라면 해제
+        if (startBox && startBox === endBox) {
+            unwrapElement(startBox);
+            saveSelection();
+            updateToolbarState();
+            return;
+        }
+
+        const fragment = range.extractContents();
+        const box = document.createElement("div");
+        box.className = "message-box";
+        box.style.backgroundColor = settings.boxColor;
+        box.appendChild(fragment);
+
+        box.querySelectorAll(".message-box, .bubble").forEach(unwrapElement);
+        range.insertNode(box);
+
+        if (!box.nextSibling) box.after(createEmptyLine());
+        if (!box.previousSibling) box.before(createEmptyLine());
+
+        const caret = document.createRange();
+        caret.setStartAfter(box);
+        caret.collapse(true);
+
+        const selection = window.getSelection();
+        selection.removeAllRanges();
+        selection.addRange(caret);
+
+        saveSelection();
+        updateToolbarState();
+    });
+
+    boxColorInput.addEventListener("input", () => {
+        settings.boxColor = boxColorInput.value;
+        saveSettings();
+        updateBoxColorDisplay();
+
+        // 현재 커서가 박스 안에 있다면 해당 박스 색상도 실시간 변경
+        const selection = window.getSelection();
+        if (selection.rangeCount > 0) {
+            const range = selection.getRangeAt(0);
+            const box = closestBox(range.startContainer);
+            if (box) {
+                box.style.backgroundColor = settings.boxColor;
+            }
+        }
+    });
+
+
+    /* =====================================================
        글꼴 / 글자 크기
     ===================================================== */
 
@@ -1341,7 +1419,11 @@ document.addEventListener("DOMContentLoaded", () => {
                 const range = selection.getRangeAt(0);
                 const bubble = closestBubble(range.startContainer);
 
-                if (bubble) {
+                const box = closestBox(range.startContainer);
+                
+                const target = bubble || box;
+
+                if (target) {
                     event.preventDefault(); // 기본 줄바꿈 방지
 
                     // 말풍선 바깥 바로 아래에 일반 텍스트 입력을 위한 빈 줄 생성
@@ -1350,7 +1432,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     newLine.appendChild(br);
 
                     // 말풍선 요소 바로 뒤에 삽입
-                    bubble.after(newLine);
+                    target.after(newLine);
 
                     // 커서를 새로 만든 빈 줄의 맨 앞으로 이동시켜 말풍선 속성 완전 해제
                     const newRange = document.createRange();
@@ -1413,6 +1495,9 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             editor.innerHTML = "";
+
+            editorWrapper.style.height = "";
+            editorWrapper.style.width = "";
 
             savedRange = null;
 
@@ -1501,12 +1586,12 @@ document.addEventListener("DOMContentLoaded", () => {
             });
 
             // 4. 조작했던 스타일 원상 복구
-            editorWrapper.style.height = originalHeight;
+            editorWrapper.style.height = "";
             editorWrapper.style.aspectRatio = originalAspectRatio;
-            editorWrapper.style.width = originalWidth;
-            editorWrapper.style.marginLeft = originalMarginLeft;
-            editorWrapper.style.marginRight = originalMarginRight;
-            editor.style.overflowY = "auto";
+            editorWrapper.style.width = "";
+            editorWrapper.style.marginLeft = "";
+            editorWrapper.style.marginRight = "";
+            editor.style.overflowY = "visible";
 
             // 5. 공유 창 띄우기 (아이폰 사진첩 직행) 또는 일반 다운로드
             const file = new File([blob], "excerpt.png", { type: "image/png" });
@@ -1535,7 +1620,7 @@ document.addEventListener("DOMContentLoaded", () => {
             editorWrapper.style.width = "";
             editorWrapper.style.marginLeft = "";
             editorWrapper.style.marginRight = "";
-            editor.style.overflowY = "auto";
+            editor.style.overflowY = "visible";
         }
     });
 
@@ -1577,6 +1662,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const range = selection.getRangeAt(0);
 
         const currentBubble = closestBubble(range.startContainer);
+        const currentBox = closestBox(range.startContainer);
 
         // 형광펜 버튼
         highlightButton.classList.toggle(
@@ -1593,6 +1679,11 @@ document.addEventListener("DOMContentLoaded", () => {
         bubbleOtherButton.classList.toggle(
             "applied",
             Boolean(currentBubble && currentBubble.classList.contains("bubble-other"))
+        );
+
+        boxButton.classList.toggle(
+            "applied",
+            Boolean(currentBox)
         );
     }
 
@@ -1626,5 +1717,7 @@ document.addEventListener("DOMContentLoaded", () => {
     applyBackground();
 
     updateHighlightColorDisplay();
+
+    updateBoxColorDisplay();
 
 });
